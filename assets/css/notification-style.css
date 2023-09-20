@@ -1,0 +1,275 @@
+/* Notification */
+.ui-pnotify {
+    right: 15px;
+    top: 15px;
+}
+.ui-pnotify .notification {
+    border-radius: 5px;
+    box-shadow: none;
+    padding: 15px 15px 15px 75px;
+}
+.ui-pnotify .notification .ui-pnotify-icon {
+    left: 0;
+    position: absolute;
+    top: 0;
+    width: 75px;
+    text-align: center;
+}
+.ui-pnotify .notification .ui-pnotify-icon > span {
+    border: 2px solid #FFF;
+    border-radius: 50%;
+    display: inline-block;
+    float: none;
+    font-size: 35px;
+    height: 50px;
+    line-height: 48px;
+    margin: 8px 0 0;
+    padding: 0;
+    width: 50px;
+    text-align: center;
+}
+.ui-pnotify .notification .ui-pnotify-title {
+    font-size: 14px;
+    letter-spacing: 0;
+}
+.ui-pnotify .notification .ui-pnotify-text {
+    font-size: 12px;
+    line-height: 1.3em;
+}
+
+.ui-pnotify .notification.notification-danger .ui-pnotify-icon > span.fa-times {
+    line-height: 47px;
+}
+
+.ui-pnotify .ui-pnotify-shadow {
+    box-shadow: 0px 1px 2px 0px rgba(0, 0, 0, 0.4);
+}
+
+.ui-pnotify.ui-pnotify-no-icon .notification {
+    padding-left: 15px;
+}
+
+.ui-pnotify .ui-pnotify-sharp {
+    border-radius: 0;
+}
+
+body .ui-pnotify.icon-nb .notification .ui-pnotify-icon > span {
+    border-color: transparent;
+    border-radius: 0;
+}
+
+.ui-pnotify.stack-bar-top {
+    right: 0;
+    top: 0;
+}
+.ui-pnotify.stack-bar-top .notification {
+    border-radius: 0;
+}
+.ui-pnotify.stack-bar-top .notification .ui-pnotify-icon > span {
+    margin-top: 7px;
+}
+
+.ui-pnotify.stack-bar-bottom {
+    bottom: 0;
+    left: auto;
+    margin-left: 15%;
+    right: auto;
+    top: auto;
+}
+.ui-pnotify.stack-bar-bottom .notification {
+    border-radius: 0;
+}
+.ui-pnotify.stack-bar-bottom .notification .ui-pnotify-icon > span {
+    margin-top: 9px;
+}
+
+.ui-pnotify.click-2-close {
+    cursor: pointer;
+}
+
+/* Notification States */
+.ui-pnotify .notification-primary {
+    background: rgba(204, 204, 204, 0.95);
+    color: rgba(255, 255, 255, 0.7);
+}
+.ui-pnotify .notification-primary .ui-pnotify-icon > span {
+    border-color: rgba(255, 255, 255, 0.7);
+}
+.ui-pnotify.stack-bar-top .notification-primary, .ui-pnotify.stack-bar-bottom .notification-primary {
+    background: #CCC;
+}
+
+.ui-pnotify.notification-primary .notification,
+.ui-pnotify.notification-primary .notification-primary {
+    background: rgba(204, 204, 204, 0.95);
+    color: rgba(255, 255, 255, 0.7);
+}
+.ui-pnotify.notification-primary .notification .ui-pnotify-icon > span,
+.ui-pnotify.notification-primary .notification-primary .ui-pnotify-icon > span {
+    border-color: rgba(255, 255, 255, 0.7);
+}
+.ui-pnotify.notification-primary.stack-bar-top .notification,
+.ui-pnotify.notification-primary.stack-bar-top .notification-primary, .ui-pnotify.notification-primary.stack-bar-bottom .notification,
+.ui-pnotify.notification-primary.stack-bar-bottom .notification-primary {
+    background: #CCC;
+}
+
+.ui-pnotify .notification-success {
+    background: rgba(71, 164, 71, 0.95);
+    color: rgba(255, 255, 255, 0.7);
+}
+.ui-pnotify .notification-success .ui-pnotify-icon > span {
+    border-color: rgba(255, 255, 255, 0.7);
+}
+.ui-pnotify.stack-bar-top .notification-success, .ui-pnotify.stack-bar-bottom .notification-success {
+    background: #47a447;
+}
+
+.ui-pnotify.notification-success .notification,
+.ui-pnotify.notification-success .notification-success {
+    background: rgba(71, 164, 71, 0.95);
+    color: rgba(255, 255, 255, 0.7);
+}
+.ui-pnotify.notification-success .notification .ui-pnotify-icon > span,
+.ui-pnotify.notification-success .notification-success .ui-pnotify-icon > span {
+    border-color: rgba(255, 255, 255, 0.7);
+}
+.ui-pnotify.notification-success.stack-bar-top .notification,
+.ui-pnotify.notification-success.stack-bar-top .notification-success, .ui-pnotify.notification-success.stack-bar-bottom .notification,
+.ui-pnotify.notification-success.stack-bar-bottom .notification-success {
+    background: #47a447;
+}
+
+.ui-pnotify .notification-warning {
+    background: rgba(237, 156, 40, 0.95);
+    color: rgba(255, 255, 255, 0.7);
+}
+.ui-pnotify .notification-warning .ui-pnotify-icon > span {
+    border-color: rgba(255, 255, 255, 0.7);
+}
+.ui-pnotify.stack-bar-top .notification-warning, .ui-pnotify.stack-bar-bottom .notification-warning {
+    background: #ed9c28;
+}
+
+.ui-pnotify.notification-warning .notification,
+.ui-pnotify.notification-warning .notification-warning {
+    background: rgba(237, 156, 40, 0.95);
+    color: rgba(255, 255, 255, 0.7);
+}
+.ui-pnotify.notification-warning .notification .ui-pnotify-icon > span,
+.ui-pnotify.notification-warning .notification-warning .ui-pnotify-icon > span {
+    border-color: rgba(255, 255, 255, 0.7);
+}
+.ui-pnotify.notification-warning.stack-bar-top .notification,
+.ui-pnotify.notification-warning.stack-bar-top .notification-warning, .ui-pnotify.notification-warning.stack-bar-bottom .notification,
+.ui-pnotify.notification-warning.stack-bar-bottom .notification-warning {
+    background: #ed9c28;
+}
+
+.ui-pnotify .notification-danger {
+    background: rgba(210, 50, 45, 0.95);
+    color: rgba(255, 255, 255, 0.7);
+}
+.ui-pnotify .notification-danger .ui-pnotify-icon > span {
+    border-color: rgba(255, 255, 255, 0.7);
+}
+.ui-pnotify.stack-bar-top .notification-danger, .ui-pnotify.stack-bar-bottom .notification-danger {
+    background: #d2322d;
+}
+
+.ui-pnotify.notification-danger .notification,
+.ui-pnotify.notification-danger .notification-danger {
+    background: rgba(210, 50, 45, 0.95);
+    color: rgba(255, 255, 255, 0.7);
+}
+.ui-pnotify.notification-danger .notification .ui-pnotify-icon > span,
+.ui-pnotify.notification-danger .notification-danger .ui-pnotify-icon > span {
+    border-color: rgba(255, 255, 255, 0.7);
+}
+.ui-pnotify.notification-danger.stack-bar-top .notification,
+.ui-pnotify.notification-danger.stack-bar-top .notification-danger, .ui-pnotify.notification-danger.stack-bar-bottom .notification,
+.ui-pnotify.notification-danger.stack-bar-bottom .notification-danger {
+    background: #d2322d;
+}
+
+.ui-pnotify .notification-info {
+    background: rgba(91, 192, 222, 0.95);
+    color: rgba(255, 255, 255, 0.7);
+}
+.ui-pnotify .notification-info .ui-pnotify-icon > span {
+    border-color: rgba(255, 255, 255, 0.7);
+}
+.ui-pnotify.stack-bar-top .notification-info, .ui-pnotify.stack-bar-bottom .notification-info {
+    background: #5bc0de;
+}
+
+.ui-pnotify.notification-info .notification,
+.ui-pnotify.notification-info .notification-info {
+    background: rgba(91, 192, 222, 0.95);
+    color: rgba(255, 255, 255, 0.7);
+}
+.ui-pnotify.notification-info .notification .ui-pnotify-icon > span,
+.ui-pnotify.notification-info .notification-info .ui-pnotify-icon > span {
+    border-color: rgba(255, 255, 255, 0.7);
+}
+.ui-pnotify.notification-info.stack-bar-top .notification,
+.ui-pnotify.notification-info.stack-bar-top .notification-info, .ui-pnotify.notification-info.stack-bar-bottom .notification,
+.ui-pnotify.notification-info.stack-bar-bottom .notification-info {
+    background: #5bc0de;
+}
+
+.ui-pnotify .notification-dark {
+    background: rgba(23, 23, 23, 0.95);
+    color: rgba(255, 255, 255, 0.7);
+}
+.ui-pnotify .notification-dark .ui-pnotify-icon > span {
+    border-color: rgba(255, 255, 255, 0.7);
+}
+.ui-pnotify.stack-bar-top .notification-dark, .ui-pnotify.stack-bar-bottom .notification-dark {
+    background: #171717;
+}
+
+.ui-pnotify.notification-dark .notification,
+.ui-pnotify.notification-dark .notification-dark {
+    background: rgba(23, 23, 23, 0.95);
+    color: rgba(255, 255, 255, 0.7);
+}
+.ui-pnotify.notification-dark .notification .ui-pnotify-icon > span,
+.ui-pnotify.notification-dark .notification-dark .ui-pnotify-icon > span {
+    border-color: rgba(255, 255, 255, 0.7);
+}
+.ui-pnotify.notification-dark.stack-bar-top .notification,
+.ui-pnotify.notification-dark.stack-bar-top .notification-dark, .ui-pnotify.notification-dark.stack-bar-bottom .notification,
+.ui-pnotify.notification-dark.stack-bar-bottom .notification-dark {
+    background: #171717;
+}
+
+/* Notification Responsive */
+@media only screen and (max-width: 767px) {
+    html > body > .ui-pnotify {
+        bottom: auto !important;
+        left: 0 !important;
+        margin: 0 !important;
+        right: 0 !important;
+        top: 60px !important;
+        width: auto !important;
+    }
+    html > body > .ui-pnotify .notification {
+        border-radius: 0 !important;
+        height: auto !important;
+        position: static !important;
+        width: 100%;
+    }
+    html > body > .ui-pnotify .notification .ui-pnotify-title,
+    html > body > .ui-pnotify .notification .ui-pnotify-text {
+        padding-right: 35px !important;
+    }
+    html > body > .ui-pnotify .notification .ui-pnotify-sticker {
+        display: none !important;
+    }
+    html > body > .ui-pnotify .notification .ui-pnotify-closer {
+        display: block !important;
+        font-size: 24px !important;
+        visibility: visible !important;
+    }
+}

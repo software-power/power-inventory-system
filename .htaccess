@@ -1,0 +1,7 @@
+Options -Indexes
+php_value max_input_vars 5000
+php_value max_execution_time 12000
+php_value short_open_tag 1
+php_value memory_limit 1024M
+php_value max_execution_time 12000
+php_value max_input_time 12000

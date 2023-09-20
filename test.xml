@@ -1,0 +1,44 @@
+<ENVELOPE>
+    <HEADER>
+        <VERSION>1</VERSION>
+        <TALLYREQUEST>Import</TALLYREQUEST>
+        <TYPE>Data</TYPE>
+        <ID>Vouchers</ID>
+    </HEADER>
+    <BODY>
+        <DESC>
+            <STATICVARIABLES>
+                <SVCURRENTCOMPANY>POWERCOMPUTERS TELECOMMUNICATION - 2022</SVCURRENTCOMPANY>
+            </STATICVARIABLES>
+        </DESC>
+        <DATA>
+            <TALLYMESSAGE>
+                <VOUCHER REMOTEID='1dC0fkkM6xvW5fvXDWHAx4EX1z0pInWmotazRu48OjoWz7HgVvcS2E1ImZIR-R-00009' VCHTYPE='Receipt' ACTION='Create'>
+                    <GUID>1dC0fkkM6xvW5fvXDWHAx4EX1z0pInWmotazRu48OjoWz7HgVvcS2E1ImZIR-R-00009</GUID>
+                    <DATE>20230301</DATE>
+                    <NARRATION></NARRATION>
+                    <VOUCHERTYPENAME>Receipt</VOUCHERTYPENAME>
+                    <PARTYLEDGERNAME>DILSHAD SHABIR DEWJI T/A AELYAN CAFE</PARTYLEDGERNAME>
+                    <REFERENCE>R-00009</REFERENCE>
+                    <VOUCHERNUMBER>R-00009</VOUCHERNUMBER>
+                    <ALLLEDGERENTRIES.LIST>
+                        <LEDGERNAME>DILSHAD SHABIR DEWJI T/A AELYAN CAFE</LEDGERNAME>
+                        <ISDEEMEDPOSITIVE>No</ISDEEMEDPOSITIVE>
+                        <AMOUNT>50000.00</AMOUNT>
+                        <BILLALLOCATIONS.LIST>
+                            <NAME>121169</NAME>
+                            <BILLTYPE>Agst Ref</BILLTYPE>
+                            <AMOUNT>50000.00</AMOUNT>
+                        </BILLALLOCATIONS.LIST>
+                    </ALLLEDGERENTRIES.LIST>
+                    <ALLLEDGERENTRIES.LIST>
+                        <ISDEEMEDPOSITIVE>Yes</ISDEEMEDPOSITIVE>
+                        <LEDGERNAME></LEDGERNAME>
+                        <AMOUNT>-50000.00</AMOUNT>
+                    </ALLLEDGERENTRIES.LIST>
+                </VOUCHER>
+            </TALLYMESSAGE>
+        </DATA>
+    </BODY>
+</ENVELOPE>
+    

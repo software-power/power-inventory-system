@@ -1,0 +1,2066 @@
+--product table
+ALTER TABLE `products` ADD `generic_name` VARCHAR(255) NULL AFTER `name`;
+ALTER TABLE `products` ADD `track_expire_date` TINYINT NOT NULL DEFAULT '0' AFTER `trackserialno`;
+ALTER TABLE `products` ADD `prescription_required` TINYINT NOT NULL DEFAULT '0' AFTER `track_expire_date`;
+
+--batch table
+CREATE TABLE `batches`(
+    `id` INT NOT NULL AUTO_INCREMENT,
+    `batch_no` VARCHAR(50) NOT NULL,
+    `qty` INT NOT NULL,
+    `expire_date` DATE NULL,
+    `gdi` INT NOT NULL COMMENT 'grn_detail_id',
+    PRIMARY KEY(`id`)
+) ENGINE = INNODB;
+
+--settings table
+ALTER TABLE `settings` ADD `product_type` INT NOT NULL DEFAULT '1'
+COMMENT 'Product type \r\n1 => POS\r\n2 => Pharmacy\r\n3 => Restaurant\r\n' AFTER `app_login_mac_address_status`;
+
+--grnreturn_details table
+ALTER TABLE `grnreturn_details` ADD `batch_id` INT NULL AFTER `stockid`;
+
+--stock_transfer_details table
+ALTER TABLE `stock_transfer_details` ADD `batch_id` INT NULL AFTER `stock_to`;
+
+--sales_details_batches
+CREATE TABLE `salesbatches`(
+    `id` INT NOT NULL AUTO_INCREMENT,
+    `sdi` INT NOT NULL COMMENT 'sales details id',
+    `batch_id` INT NOT NULL,
+    `qty` DOUBLE NOT NULL,
+    PRIMARY KEY(`id`)
+) ENGINE = INNODB;
+
+--doctors table
+CREATE TABLE `doctors`(
+    `id` INT NOT NULL AUTO_INCREMENT,
+    `name` VARCHAR(50) NOT NULL,
+    `createdby` INT NOT NULL,
+    `doc` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY(`id`)
+) ENGINE = INNODB;
+
+--hospitals table
+CREATE TABLE `hospitals`(
+    `id` INT NOT NULL AUTO_INCREMENT,
+    `name` VARCHAR(50) NOT NULL,
+    `createdby` INT NOT NULL,
+    `doc` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY(`id`)
+) ENGINE = INNODB;
+
+CREATE TABLE `sales_prescription_details`(
+    `id` INT NOT NULL AUTO_INCREMENT,
+    `sdi` INT NOT NULL COMMENT 'sales details id',
+    `doctor_id` INT NOT NULL,
+    `hospital_id` INT NOT NULL,
+    `prescription` TEXT NOT NULL,
+    `referred` TINYINT NOT NULL DEFAULT '0' COMMENT '0 => not referred\r\n1 => referred by doctor',
+    PRIMARY KEY(`id`)
+) ENGINE = INNODB;
+
+--user table
+ALTER TABLE `users` ADD `random_batch` TINYINT NULL DEFAULT '0' COMMENT 'Specify if user can sell from random batch' AFTER `changepass`;
+
+-- company settings
+UPDATE `settings` SET `app_login_mac_address_status` = '0' WHERE `settings`.`id` = 1;
+UPDATE `settings` SET `tally_status` = '0' WHERE `settings`.`id` = 1;
+
+--default location use id 1
+UPDATE `locations` SET `name` = 'Headquarter',`branchid` = '1' WHERE `locations`.`id` = 2;
+
+
+-- default quick sale client
+INSERT INTO `clients` (`id`, `tallyid`, `industryid`, `name`, `ledgername`,
+`royaltyno`, `tinno`, `vatno`, `mobile`, `tel`, `secondmobile`, `plotno`,
+`district`, `street`, `address`, `city`, `country`, `email`, `secondemail`,
+`createdby`, `doc`, `modifiedby`, `dom`, `lead_dom`, `is_updated`, `status`)
+VALUES (4555, '0', '1', 'cash client', NULL, NULL, '54645', '', '255719525658',
+'', '', '12', '', '', '566', 'DSM', '', 'mustaphakassam@gmail.com', '', '1',
+'2020-01-14 00:00:00', '0', '0000-00-00', '0000-00-00', '0', 'active');
+
+-- expire notification
+ALTER TABLE `products` ADD `expiry_notification` TINYINT NOT NULL DEFAULT '0' AFTER `track_expire_date`, ADD `notify_before_days` TINYINT NOT NULL DEFAULT '0' AFTER `expiry_notification`;
+ALTER TABLE `users` ADD `expiry_notification` TINYINT NOT NULL DEFAULT '0' AFTER `random_batch`;
+-- change quick sale price
+ALTER TABLE `users` ADD `change_quick_sale_price` TINYINT NOT NULL DEFAULT '0' AFTER `expire_notification`;
+ALTER TABLE
+    `salesdetails` ADD `required_price` DECIMAL(18, 2) NOT NULL AFTER `price`,
+    ADD `required_amount` DECIMAL(18, 2) NOT NULL AFTER `amount`,
+    ADD `required_vat_amount` DECIMAL(18, 2) NOT NULL AFTER `vat_amount`;
+
+CREATE TABLE `settings2`(
+    `id` INT(11) NOT NULL PRIMARY KEY AUTO_INCREMENT,
+    `efd_location` VARCHAR(20) NOT NULL,
+    `efd_local_dir` VARCHAR(100) NOT NULL DEFAULT 'C:/dpool/in',
+    `efd_shared_host` VARCHAR(50) NOT NULL DEFAULT '127.0.0.1',
+    `efd_shared_dir` VARCHAR(100) NOT NULL DEFAULT 'in',
+    `efd_ftp_server` VARCHAR(50) NOT NULL DEFAULT '127.0.0.1',
+    `ftp_username` VARCHAR(100) DEFAULT NULL,
+    `ftp_password` VARCHAR(100) DEFAULT NULL,
+    `change_quick_price` TINYINT(4) NOT NULL DEFAULT 0
+) ENGINE = INNODB;
+
+INSERT INTO `settings2`(
+    `id`,
+    `efd_location`,
+    `efd_local_dir`,
+    `efd_shared_host`,
+    `efd_shared_dir`,
+    `efd_ftp_server`,
+    `ftp_username`,
+    `ftp_password`,
+    `change_quick_price`
+)
+VALUES(
+    1,
+    'local',
+    'C:/dpool/in',
+    '10.10.100.127',
+    'in',
+    '10.10.100.127',
+    'user2',
+    '123456789',
+    0
+);
+
+ALTER TABLE `orders` ADD `type` ENUM('normal','quick') NOT NULL DEFAULT 'normal' AFTER `ticketid`;
+
+ALTER TABLE
+    `orderdetails` ADD `required_price` DECIMAL(18, 2) NOT NULL DEFAULT '0' AFTER `price`,
+    ADD `required_vat_amount` DECIMAL(18, 2) NOT NULL DEFAULT '0' AFTER `vat_amount`;
+
+ALTER TABLE
+    `products` ADD `reorder_level` TINYINT NOT NULL DEFAULT '0' AFTER `prescription_required`,
+    ADD `min_qty` INT NOT NULL DEFAULT '0' AFTER `reorder_level`,
+    ADD `max_qty` INT NOT NULL DEFAULT '0' AFTER `min_qty`;
+
+ALTER TABLE `settings2` ADD `order_validity_days` INT NOT NULL DEFAULT '7' AFTER `quick_order`;
+UPDATE `submenus` SET `label` = 'Orders' WHERE `submenus`.`id` = 25;
+
+CREATE TABLE `product_categories`(
+    `id` INT NOT NULL AUTO_INCREMENT,
+    `name` VARCHAR(40) NOT NULL,
+    `createdby` INT NOT NULL,
+    `doc` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    `modifiedby` INT NULL,
+    `dom` DATETIME NULL ON UPDATE CURRENT_TIMESTAMP,
+    PRIMARY KEY(`id`)
+) ENGINE = INNODB;
+
+CREATE TABLE `product_subcategories`(
+    `id` INT NOT NULL AUTO_INCREMENT,
+    `name` VARCHAR(40) NOT NULL,
+    `category_id` INT NOT NULL,
+    `createdby` INT NOT NULL,
+    `doc` DATETIME NOT NULL,
+    `modifiedby` INT NULL,
+    `dom` DATETIME NULL ON UPDATE CURRENT_TIMESTAMP,
+    PRIMARY KEY(`id`)
+) ENGINE = INNODB;
+
+ALTER TABLE `products` ADD `subcategoryid` INT NOT NULL DEFAULT '0' AFTER `bulk_units`;
+ALTER TABLE `clients` CHANGE `mobile` `mobile` VARCHAR(20) CHARACTER SET latin1 COLLATE latin1_swedish_ci NULL;
+ALTER TABLE `settings2` ADD `sr_type` ENUM('A4','small','detailed') NOT NULL DEFAULT 'small' AFTER `order_validity_days`;
+
+CREATE TABLE `reorder_level`(
+    `id` INT NOT NULL AUTO_INCREMENT,
+    `stockid` INT NOT NULL,
+    `minqty` INT NOT NULL,
+    `maxqty` INT NOT NULL,
+    `createdby` INT NOT NULL,
+    `doc` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    `modifiedby` INT NULL,
+    `dom` DATETIME NULL ON UPDATE CURRENT_TIMESTAMP,
+    PRIMARY KEY(`id`)
+) ENGINE = INNODB;
+
+INSERT INTO `submenus` (`id`, `menuid`, `label`, `module`, `action`, `sortno`, `status`) VALUES (NULL, '1', 'Reorder Level', 'products', 'reorder_list', '13', '1');
+ALTER TABLE `settings2`  ADD `reorder_level` TINYINT NOT NULL DEFAULT '0'  AFTER `sr_type`;
+
+CREATE TABLE `expenses`(
+    `id` INT NOT NULL AUTO_INCREMENT,
+    `name` VARCHAR(50) NOT NULL,
+    `createdby` INT NOT NULL,
+    `doc` DATETIME NOT NULL,
+    `modifiedby` INT NULL,
+    `dom` DATETIME NULL ON UPDATE CURRENT_TIMESTAMP,
+    PRIMARY KEY(`id`)
+) ENGINE = INNODB;
+
+CREATE TABLE `expenses_issued`(
+    `id` INT NOT NULL AUTO_INCREMENT,
+    `expenseid` INT NOT NULL,
+    `branchid` INT NOT NULL,
+    `amount` INT NOT NULL,
+    `paidto` VARCHAR(100) NULL,
+    `remarks` TEXT NULL,
+    `invoiceno` INT NULL,
+    `createdby` INT NOT NULL,
+    `doc` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    `modifiedby` INT NULL,
+    `dom` DATETIME NULL ON UPDATE CURRENT_TIMESTAMP,
+    PRIMARY KEY(`id`)
+) ENGINE = INNODB;
+
+INSERT INTO `submenus` (`id`, `menuid`, `label`, `module`, `action`, `sortno`, `status`) VALUES (NULL, '8', 'Issued Expense', 'expenses', 'issued_list', '3', '1');
+INSERT INTO `submenus` (`id`, `menuid`, `label`, `module`, `action`, `sortno`, `status`) VALUES (NULL, '3', 'Cash Summary', 'reports', 'cash_summary', '3', '1');
+ALTER TABLE `users` ADD `edit_level` TINYINT NOT NULL DEFAULT '0' AFTER `expire_notification`;
+
+ALTER TABLE
+    `settings2` ADD `def_department` INT NOT NULL AFTER `reordermax`,
+    ADD `def_brand` INT NOT NULL AFTER `def_department`,
+    ADD `def_category` INT NOT NULL AFTER `def_brand`,
+    ADD `def_subcategory` INT NOT NULL AFTER `def_category`,
+    ADD `def_unit` INT NOT NULL AFTER `def_subcategory`,
+    ADD `def_bulk` INT NOT NULL AFTER `def_unit`
+    ADD `def_base` INT NOT NULL DEFAULT '5' AFTER `def_bulk`;
+
+CREATE TABLE `notifications`(
+    `id` INT NOT NULL AUTO_INCREMENT,
+    `fromid` INT NOT NULL DEFAULT '0',
+    `toid` INT NOT NULL,
+    `title` VARCHAR(50) NOT NULL,
+    `body` TEXT NOT NULL,
+    `state` ENUM('read','unread') NOT NULL DEFAULT 'unread',
+    `doc` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    `dom` DATETIME NULL ON UPDATE CURRENT_TIMESTAMP,
+    PRIMARY KEY(`id`)
+) ENGINE = INNODB;
+
+ALTER TABLE `users` ADD `stock_notification` TINYINT NOT NULL DEFAULT '0' AFTER `expire_notification`;
+ALTER TABLE `settings2` ADD `def_tax` INT NOT NULL AFTER `replicate_name`;
+ALTER TABLE `settings2` ADD `prescription_entry` TINYINT NOT NULL DEFAULT '0' AFTER `sr_type`;
+ALTER TABLE `notifications` ADD `type` ENUM('success','danger','warning') NOT NULL DEFAULT 'warning' AFTER `body`;
+ALTER TABLE `sales` ADD `receipt_no` VARCHAR(50) NOT NULL AFTER `id`;
+ALTER TABLE `lpo` ADD `locationid` INT NOT NULL AFTER `supplierid`;
+
+ALTER TABLE `settings`
+  DROP `is_vfdReg`,
+  DROP `vfd_username`,
+  DROP `vfd_password`,
+  DROP `vfd_routingKey`,
+  DROP `vfd_registrationID`,
+  DROP `vfd_serial`,
+  DROP `vfd_receiptCode`,
+  DROP `vfd_UIN`,
+  DROP `vfd_createdby`;
+
+  ALTER TABLE `settings` CHANGE `vfdstatus` `vfdstatus` ENUM('testing','live') CHARACTER SET latin1 COLLATE latin1_swedish_ci NOT NULL DEFAULT 'testing';
+  ALTER TABLE `salespayments` ADD `chequetype` ENUM('PDC','Normal') NULL AFTER `chequename`;
+  ALTER TABLE `settings` ADD `vfd_type` ENUM('VFD','ZVFD') NOT NULL DEFAULT 'VFD' AFTER `product_type`;
+  ALTER TABLE `settings2` ADD `tra_rc` TINYINT NOT NULL DEFAULT '0' AFTER `sr_type`;
+  ALTER TABLE `sales` ADD `isfiscalized` TINYINT NOT NULL DEFAULT '0' AFTER `isreceipt_printed`;
+  ALTER TABLE `sales` CHANGE `vfd_status_message` `fiscalize_status_message` TEXT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL;
+
+  -- failed fiscalize menu
+  UPDATE `submenus` SET `label` = 'Failed Fiscalization', `action` = 'failed_fiscalization' WHERE `submenus`.`id` = 101;
+ALTER TABLE `settings2` ADD `point_value` DECIMAL(18,2) NOT NULL AFTER `def_grnloc`;
+INSERT INTO `paymentmethods` (`id`, `name`, `status`, `doc`, `createdby`, `dom`, `modifiedby`) VALUES (NULL, 'Credit Card', 'active', '2019-11-27 10:09:32', '1', '0000-00-00 00:00:00', '0');
+ALTER TABLE `salespayments` CHANGE `chequetype` `chequetype` ENUM('Normal','PDC') CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL;
+ALTER TABLE `royalty_card` ADD `assignby` INT NULL AFTER `status`, ADD `assign_date` DATETIME NULL AFTER `assignby`, ADD `doc` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP AFTER `assign_date`;
+ALTER TABLE `royalty_card` ADD `createdby` INT NOT NULL AFTER `assign_date`;
+ALTER TABLE `salespayments` ADD `credit_cardno` VARCHAR(40) NOT NULL AFTER `bankreference`;
+INSERT INTO `submenus` (`id`, `menuid`, `label`, `module`, `action`, `sortno`, `status`) VALUES (NULL, '13', 'Advance Payments', 'advance_payments', 'list', '7', '1');
+
+CREATE TABLE `advance_payments` (
+  `id` int AUTO_INCREMENT,
+  `clientid` int(11) NOT NULL,
+  `branchid` INT NOT NULL,
+  `pmethod_id` int(11) NOT NULL,
+  `amount` decimal(18,2) UNSIGNED NOT NULL,
+  `remark` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `status` enum('active','inactive') COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'active',
+  `approvalby` int(11) NULL,
+  `approvedate` datetime NULL,
+  `chequename` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `chequetype` enum('Normal','PDC') COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `bankname` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `bankreference` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `credit_cardno` varchar(40) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `createdby` int(10) NOT NULL,
+  `doc` datetime NOT NULL DEFAULT current_timestamp(),
+  `modifiedby` int(10) DEFAULT NULL,
+  `dom` datetime DEFAULT NULL ON UPDATE current_timestamp(),
+  PRIMARY KEY (id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+ALTER TABLE `salespayments` ADD `from_advance` TINYINT NOT NULL DEFAULT '0' AFTER `credit_cardno`, ADD `advance_amount` DECIMAL(18,2) NULL AFTER `from_advance`;
+INSERT INTO `submenus` (`id`, `menuid`, `label`, `module`, `action`, `sortno`, `status`) VALUES (NULL, '13', 'Client Receipts', 'payments', 'client_receipts', '8', '1');
+
+
+ALTER TABLE `taxcode` ADD `vfd_code` VARCHAR(5) NOT NULL AFTER `vat_percent`;
+-- update tax code table
+
+ALTER TABLE `sales` ADD `receipt_url` TEXT NOT NULL AFTER `receipt_date`;
+
+CREATE TABLE `expenses`(
+    `id` INT NOT NULL AUTO_INCREMENT,
+    `branchid` INT NOT NULL,
+    `total_amount` DECIMAL(18, 2) NOT NULL,
+    `paidto` VARCHAR(100) NOT NULL,
+    `remarks` TEXT NOT NULL,
+    `invoiceno` INT NOT NULL,
+    `saleid` INT NOT NULL,
+    `createdby` INT NOT NULL,
+    `doc` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    `modifiedby` INT NULL,
+    `dom` DATETIME NULL ON UPDATE CURRENT_TIMESTAMP,
+    `status` VARCHAR(15) NOT NULL DEFAULT 'active',
+    PRIMARY KEY(`id`)
+) ENGINE = INNODB;
+
+CREATE TABLE `expense_details`(
+    `id` INT NOT NULL AUTO_INCREMENT,
+    `expenseid` INT NOT NULL,
+    `attributeid` INT NOT NULL,
+    `amount` DECIMAL(18, 2) NOT NULL,
+    PRIMARY KEY(`id`)
+) ENGINE = INNODB;
+
+-- update expenses menu action
+UPDATE `submenus` SET `action` = 'expenses_attribute_list' WHERE `submenus`.`id` = 62;
+
+DROP TABLE `expenses_issued`,`sales_expenses`, `sales_expenses_details`;
+
+INSERT INTO `submenus` (`id`, `menuid`, `label`, `module`, `action`, `sortno`, `status`) VALUES (NULL, '3', 'Sales audit Invoice-wise', 'reports', 'audit_report_invoice_wise', '4', '1');
+
+-- profit loss menu
+UPDATE `submenus` SET `action` = 'profit_loss' WHERE `submenus`.`id` = 85;
+
+-- update grn return list
+UPDATE `submenus` SET `action` = 'grn_return_list' WHERE `submenus`.`id` = 59;
+
+INSERT INTO `submenus` (`id`, `menuid`, `label`, `module`, `action`, `sortno`, `status`) VALUES (NULL, '3', 'Client Ledger', 'reports', 'client_ledger', '19', '1')
+
+-- canceled grn
+CREATE TABLE `grn_canceled`(
+    `id` INT NOT NULL AUTO_INCREMENT,
+    `grnid` INT NOT NULL,
+    `locationid` INT NOT NULL,
+    `supplierid` INT NOT NULL,
+    `payload` TEXT NOT NULL,
+    `createdby` INT NOT NULL,
+    `doc` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY(`id`)
+) ENGINE = INNODB;
+
+INSERT INTO `submenus` (`id`, `menuid`, `label`, `module`, `action`, `sortno`, `status`) VALUES (NULL, '8', 'Canceled GRN', 'stocks', 'canceled_grn_list', '10', '1');
+
+INSERT INTO `submenus` (`id`, `menuid`, `label`, `module`, `action`, `sortno`, `status`) VALUES (NULL, '15', 'Quick Base Percentage', 'products', 'update_base_percentage', '20', '1');
+
+ALTER TABLE `grn` ADD `dom` DATETIME NULL ON UPDATE CURRENT_TIMESTAMP AFTER `doc`;
+
+CREATE TABLE `grn_detail_logs`(
+    `id` INT NOT NULL AUTO_INCREMENT,
+    `grnid` INT NOT NULL,
+    `gdi` INT NOT NULL,
+    `before_payload` TEXT NOT NULL,
+    `after_payload` TEXT NOT NULL,
+    `createdby` INT NOT NULL,
+    `doc` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY(`id`)
+) ENGINE = INNODB;
+
+
+CREATE TABLE `grn_batch_logs`(
+    `id` INT NOT NULL AUTO_INCREMENT,
+    `gdi` INT NOT NULL,
+    `batchid` INT NOT NULL,
+    `before_payload` TEXT NOT NULL,
+    `after_payload` TEXT NOT NULL,
+    `createdby` INT NOT NULL,
+    `doc` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY(`id`)
+) ENGINE = INNODB;
+
+ALTER TABLE `grn` ADD `vat_registered` INT NOT NULL DEFAULT '0' AFTER `supplierid`, ADD `vat_desc` VARCHAR(100) NULL AFTER `vat_registered`;
+
+ALTER TABLE `settings` ADD `tax_office` VARCHAR(50) NOT NULL AFTER `tel`;
+
+CREATE TABLE `sales_canceled`(
+    `id` INT NOT NULL AUTO_INCREMENT,
+    `saleid` INT NOT NULL,
+    `clientid` INT NOT NULL,
+    `locationid` INT NOT NULL,
+    `payload` TEXT NOT NULL,
+    `createdby` INT NOT NULL,
+    `doc` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY(`id`)
+) ENGINE = INNODB;
+
+INSERT INTO `submenus` (`id`, `menuid`, `label`, `module`, `action`, `sortno`, `status`) VALUES (NULL, '13', 'Canceled Sales', 'sales', 'canceled_list', '20', '1');
+
+CREATE TABLE `serialnos`(
+    `id` INT NOT NULL AUTO_INCREMENT,
+    `number` VARCHAR(100) NOT NULL,
+    `product_id` INT NOT NULL,
+    `current_stock_id` INT NOT NULL,
+    `gdi` INT NOT NULL COMMENT 'grn detail id',
+    `sdi` INT NULL DEFAULT NULL COMMENT 'sale detail id',
+    `salespersonid` INT NULL,
+    `dos` DATETIME NULL,
+    `createdby` INT NOT NULL,
+    `doc` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY(`id`)
+) ENGINE = INNODB;
+
+CREATE TABLE `stock_transfer_serials`(
+    `id` INT NOT NULL AUTO_INCREMENT,
+    `stdi` INT NOT NULL  COMMENT 'stock transfer detail id',
+    `serialno_id` INT NOT NULL,
+    `doc` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY(`id`)
+) ENGINE = INNODB;
+
+INSERT INTO `submenus` (`id`, `menuid`, `label`, `module`, `action`, `sortno`, `status`) VALUES (NULL, '8', 'Add Serial No', 'stocks', 'add_serialno', '11', '1');
+
+-- system backup
+UPDATE `submenus` SET  `label` = 'Backup System', `module` = 'backup', `action` = 'system_backup', `sortno` = '50' WHERE `submenus`.`id` = 80;
+
+CREATE TABLE `stock_transfer_batches`(
+    `id` INT NOT NULL AUTO_INCREMENT,
+    `stdi` INT NOT NULL COMMENT 'stock transfer detail id',
+    `batch_id` INT NOT NULL,
+    `qty` INT NOT NULL,
+    `doc` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY(`id`)
+) ENGINE = INNODB;
+
+
+-- execute transfer query first
+
+ALTER TABLE `stock_transfer_details`
+  DROP `batch_id`,
+  DROP `serialid`,
+  DROP `serialno`,
+  DROP `description`;
+
+ALTER TABLE `products` ADD `validate_serialno` INT NOT NULL DEFAULT '0' AFTER `trackserialno`;
+
+ALTER TABLE `serialnos` ADD `source` ENUM('grn','sale','transfer','return') NOT NULL DEFAULT 'grn' AFTER `gdi`;
+ALTER TABLE `serialnos` ADD `returned` TINYINT NOT NULL DEFAULT '0' AFTER `source`;
+
+ALTER TABLE `sales` ADD `source` ENUM('quick','detailed') NOT NULL DEFAULT 'detailed' AFTER `payment_status`;
+update sales set `source` = 'quick' where credit_days is null
+
+CREATE TABLE `grn_return_batches`(
+    `id` INT NOT NULL AUTO_INCREMENT,
+    `grdi` INT NOT NULL COMMENT 'grn return detail id',
+    `batch_id` INT NOT NULL,
+    `qty` INT NOT NULL,
+    `doc` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY(`id`)
+) ENGINE = INNODB;
+
+CREATE TABLE `grn_return_serials`(
+    `id` INT NOT NULL AUTO_INCREMENT,
+    `grdi` INT NOT NULL  COMMENT 'grn return detail id',
+    `serialno_id` INT NOT NULL,
+    `doc` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY(`id`)
+) ENGINE = INNODB;
+
+ALTER TABLE `hierarchics` CHANGE `dom` `dom` DATETIME NULL ON UPDATE CURRENT_TIMESTAMP, CHANGE `modifiedby` `modifiedby` INT(11) NULL;
+UPDATE `hierarchics` SET `dom` = null, modifiedby = null;
+
+INSERT INTO `submenus` (`id`, `menuid`, `label`, `module`, `action`, `sortno`, `status`) VALUES (NULL, '3', 'Expired Report', 'stocks', 'expired_report', '7', '1');
+
+-- execute return query first
+ALTER TABLE `grnreturn_details`
+  DROP `batch_id`,
+  DROP `serialno`,
+  DROP `serialid`;
+
+ALTER TABLE `hierarchicprices` CHANGE `dom` `dom` DATETIME NULL ON UPDATE CURRENT_TIMESTAMP, CHANGE `modifiedby` `modifiedby` INT NULL;
+UPDATE hierarchicprices SET dom = null, modifiedby = null;
+
+ALTER TABLE `settings` ADD `group_product` INT NOT NULL DEFAULT '0' AFTER `CS_TESTURL`;
+ALTER TABLE `settings` ADD `zvfd_ID` VARCHAR(100) NOT NULL AFTER `CS_TESTURL`;
+
+ALTER TABLE `settings2` ADD `backup_password` VARCHAR(100) NOT NULL AFTER `point_value`;
+ALTER TABLE `sales` ADD `bridge_invoice_num` TEXT NOT NULL AFTER `receipt_num`;
+
+ALTER TABLE `sales` ADD `vrnno` VARCHAR(50) NOT NULL AFTER `znumber`,
+ ADD `street` VARCHAR(50) NOT NULL AFTER `vrnno`,
+ ADD `tinnumber` VARCHAR(20) NOT NULL AFTER `street`,
+ ADD `companyname` VARCHAR(50) NOT NULL AFTER `tinnumber`;
+
+
+
+
+ --- AFTER SHIFTING ---
+
+ INSERT INTO `submenus` (`id`, `menuid`, `label`, `module`, `action`, `sortno`, `status`) VALUES (NULL, '8', 'Stock Adjustment', 'stocks', 'stock_adjustment_list', '4', '1');
+
+CREATE TABLE `stock_adjustments`(
+    `id` INT NOT NULL AUTO_INCREMENT,
+    `locationid` INT NOT NULL,
+    `remarks` TEXT NOT NULL,
+    `createdby` INT NOT NULL,
+    `doc` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY(`id`)
+) ENGINE = INNODB;
+
+CREATE TABLE `stock_adjustment_details`(
+    `id` INT NOT NULL AUTO_INCREMENT,
+    `adjustment_id` INT NOT NULL,
+    `stockid` INT NOT NULL,
+    `current_stock` INT NOT NULL,
+    `remarks` TEXT NOT NULL,
+    `createdby` INT NOT NULL,
+    `doc` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY(`id`)
+) ENGINE = INNODB;
+
+CREATE TABLE `stock_adjustment_batches`(
+    `id` INT NOT NULL AUTO_INCREMENT,
+    `adid` INT NOT NULL,
+    `batch_id` INT NOT NULL,
+    `qty` INT NOT NULL,
+    `action` ENUM('reduce','add') NOT NULL DEFAULT 'reduce',
+    `before_qty` INT NOT NULL,
+    `doc` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY(`id`)
+) ENGINE = INNODB;
+
+CREATE TABLE `stock_adjustment_serials`(
+    `id` INT NOT NULL AUTO_INCREMENT,
+    `adid` INT NOT NULL,
+    `serialno_id` INT NOT NULL,
+    `doc` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY(`id`)
+) ENGINE = INNODB;
+
+DROP TABLE `expenses_issued`;
+
+INSERT INTO `submenus` (`id`, `menuid`, `label`, `module`, `action`, `sortno`, `status`) VALUES (NULL, '3', 'GRN return Detailed Report', 'reports', 'grn_return_detailed_report', '7', '1');
+INSERT INTO `submenus` (`id`, `menuid`, `label`, `module`, `action`, `sortno`, `status`) VALUES (NULL, '3', 'Stock Transfer Detailed Report', 'reports', 'transfer_detailed_report', '7', '1');
+
+CREATE TABLE `supplier_payments`(
+    `id` INT NOT NULL AUTO_INCREMENT,
+    `supplierid` INT NOT NULL,
+    `branch_id` INT NOT NULL,
+    `pmethod_id` INT NOT NULL,
+    `total_amount` DECIMAL(18, 2) NOT NULL COMMENT 'total details outstanding amount',
+    `remarks` TEXT NOT NULL,
+    `status` ENUM('active', 'inactive') NOT NULL DEFAULT 'active',
+    `createdby` INT NOT NULL,
+    `doc` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    `modifiedby` INT NULL,
+    `dom` DATETIME NULL ON UPDATE CURRENT_TIMESTAMP,
+    PRIMARY KEY(`id`)
+) ENGINE = INNODB;
+
+CREATE TABLE `supplier_payment_info`(
+    `id` INT NOT NULL AUTO_INCREMENT,
+    `spid` INT NOT NULL,
+    `chequename` VARCHAR(100) NOT NULL,
+    `chequetype` VARCHAR(50) NOT NULL,
+    `bankname` VARCHAR(50) NOT NULL,
+    `bankreference` VARCHAR(100) NOT NULL,
+    `credit_cardno` VARCHAR(40) NOT NULL,
+    `source` ENUM('payment','advance') NOT NULL DEFAULT 'payment' COMMENT 'payment info related to',
+    `createdby` INT NOT NULL,
+    `doc` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY(`id`)
+) ENGINE = INNODB;
+
+CREATE TABLE `supplier_payment_details`(
+    `id` INT NOT NULL AUTO_INCREMENT,
+    `spid` INT NOT NULL,
+    `grnid` INT NOT NULL,
+    `amount` DECIMAL(18, 2) NOT NULL,
+    `supplier_receiptno` VARCHAR(50) NOT NULL,
+    `createdby` INT NOT NULL,
+    `doc` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY(`id`)
+) ENGINE = INNODB;
+
+INSERT INTO `submenus` (`id`, `menuid`, `label`, `module`, `action`, `sortno`, `status`) VALUES (NULL, '8', 'Supplier payments', 'suppliers', 'payment_list', '12', '1');
+INSERT INTO `submenus` (`id`, `menuid`, `label`, `module`, `action`, `sortno`, `status`) VALUES (NULL, '3', 'Stock Adjustment Detailed Report', 'reports', 'adjustment_detailed_report', '7', '1');
+ALTER TABLE `notifications` ADD `about` ENUM('expire','stock','supplier') NULL AFTER `toid`;
+ALTER TABLE `settings2` ADD `supplier_notification` TINYINT NOT NULL DEFAULT '0' AFTER `order_validity_days`;
+ALTER TABLE `users` ADD `supplier_notification` TINYINT NOT NULL DEFAULT '0' AFTER `stock_notification`; -- supplier notification
+ALTER TABLE `stock_transfers` ADD `approvedby` INT NULL AFTER `doc`, ADD `doa` DATETIME NULL AFTER `approvedby`;
+ALTER TABLE `products` ADD `image_path` VARCHAR(50) NOT NULL AFTER `modelid`;
+ALTER TABLE `salespayments` ADD `receipt_type` ENUM('sr','tra') NOT NULL DEFAULT 'sr' AFTER `pmethod_id`;
+INSERT INTO `submenus` (`id`, `menuid`, `label`, `module`, `action`, `sortno`, `status`) VALUES (NULL, '13', 'Client Receipts SR', 'payments', 'client_receipts_sr', '8', '1');
+INSERT INTO `menus` (`id`, `label`, `module`, `action`, `icon`, `sortno`, `status`) VALUES (NULL, 'Stock Reports', '', '', 'fa fa-database', '11', '1');
+INSERT INTO `menus` (`id`, `label`, `module`, `action`, `icon`, `sortno`, `status`) VALUES (NULL, 'Sales Reports', '', '', 'fa fa-pie-chart', '12', '1');
+INSERT INTO `menus` (`id`, `label`, `module`, `action`, `icon`, `sortno`, `status`) VALUES (NULL, 'Client Reports', '', '', 'fa fa-users', '13', '1');
+
+UPDATE `menus` SET `status` = '0' WHERE `menus`.`id` = 3;
+INSERT INTO `submenus`(`menuid`, `label`, `module`, `action`, `sortno`, `status`) VALUES ('18','Contact Report','reports','contact','1','1');
+INSERT INTO `submenus`(`menuid`, `label`, `module`, `action`, `sortno`, `status`) VALUES ('18','Leader account report','reports','ledger_account','2','1');
+INSERT INTO `submenus`(`menuid`, `label`, `module`, `action`, `sortno`, `status`) VALUES ('18','Client Ledger','reports','client_ledger','3','1');
+INSERT INTO `submenus`(`menuid`, `label`, `module`, `action`, `sortno`, `status`) VALUES ('16','Stock Report','stocks','stock_report','1','1');
+INSERT INTO `submenus`(`menuid`, `label`, `module`, `action`, `sortno`, `status`) VALUES ('16','Admin Stock Report','stocks','stock_report_admin','2','1');
+INSERT INTO `submenus`(`menuid`, `label`, `module`, `action`, `sortno`, `status`) VALUES ('16','Stock Report With Reorder','stocks','stock_report_with_reorder','3','1');
+INSERT INTO `submenus`(`menuid`, `label`, `module`, `action`, `sortno`, `status`) VALUES ('16','Expired Report','stocks','expired_report','4','1');
+INSERT INTO `submenus`(`menuid`, `label`, `module`, `action`, `sortno`, `status`) VALUES ('16','GRN return Detailed Report','reports','grn_return_detailed_report','5','1');
+INSERT INTO `submenus`(`menuid`, `label`, `module`, `action`, `sortno`, `status`) VALUES ('16','Stock Transfer Detailed Report','reports','transfer_detailed_report','6','1');
+INSERT INTO `submenus`(`menuid`, `label`, `module`, `action`, `sortno`, `status`) VALUES ('16','Stock Adjustment Detailed Report','reports','adjustment_detailed_report','7','1');
+INSERT INTO `submenus`(`menuid`, `label`, `module`, `action`, `sortno`, `status`) VALUES ('16','Product history report','reports','product_history','8','1');
+INSERT INTO `submenus`(`menuid`, `label`, `module`, `action`, `sortno`, `status`) VALUES ('17','Sales Report','reports','sales_report','1','1');
+INSERT INTO `submenus`(`menuid`, `label`, `module`, `action`, `sortno`, `status`) VALUES ('17','Sales Report With SR','reports','sales_report_with_sr','2','1');
+INSERT INTO `submenus`(`menuid`, `label`, `module`, `action`, `sortno`, `status`) VALUES ('17','Sales audit report','reports','audit_report','3','1');
+INSERT INTO `submenus`(`menuid`, `label`, `module`, `action`, `sortno`, `status`) VALUES ('17','Sales audit Invoice-wise','reports','audit_report_invoice_wise','4','1');
+INSERT INTO `submenus`(`menuid`, `label`, `module`, `action`, `sortno`, `status`) VALUES ('17','Daily cash sales','reports','daily_cash','5','1');
+INSERT INTO `submenus`(`menuid`, `label`, `module`, `action`, `sortno`, `status`) VALUES ('17','Daily cash sales With SR','reports','daily_cash_with_sr','6','1');
+INSERT INTO `submenus`(`menuid`, `label`, `module`, `action`, `sortno`, `status`) VALUES ('17','Cash Summary','reports','cash_summary','7','1');
+INSERT INTO `submenus`(`menuid`, `label`, `module`, `action`, `sortno`, `status`) VALUES ('17','Cash Summary With SR','reports','cash_summary_with_sr','8','1');
+INSERT INTO `submenus`(`menuid`, `label`, `module`, `action`, `sortno`, `status`) VALUES ('17','Order Report','sales','order_report','9','1');
+INSERT INTO `submenus`(`menuid`, `label`, `module`, `action`, `sortno`, `status`) VALUES ('17','Sales outstanding','reports','sales_outstanding','10','1');
+INSERT INTO `submenus`(`menuid`, `label`, `module`, `action`, `sortno`, `status`) VALUES ('17','Sales Summary','reports','sales_summary','11','1');
+INSERT INTO `submenus`(`menuid`, `label`, `module`, `action`, `sortno`, `status`) VALUES ('17','Monthly Sales Summary','reports','sales_summary_monthly','12','1');
+INSERT INTO `submenus`(`menuid`, `label`, `module`, `action`, `sortno`, `status`) VALUES ('17','Sales Target Report','sales_target','index','13','1');
+INSERT INTO `submenus`(`menuid`, `label`, `module`, `action`, `sortno`, `status`) VALUES ('17','Profit & Loss','reports','profit_loss','14','1');
+INSERT INTO `submenus`(`menuid`, `label`, `module`, `action`, `sortno`, `status`) VALUES ('17','Referal Report','reports','referral_report','15','1');
+
+CREATE TABLE `supplier_advance_payments`(
+    `id` INT NOT NULL AUTO_INCREMENT,
+    `supplierid` INT NOT NULL,
+    `branchid` INT NOT NULL,
+    `pmethod_id` INT NOT NULL,
+    `spid` INT NULL COMMENT 'over payment reference',
+    `amount` DECIMAL(18, 2) NOT NULL,
+    `createdby` INT NOT NULL,
+    `doc` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY(`id`)
+) ENGINE = INNODB;
+
+CREATE TABLE `supplier_payment_used_advances`(
+    `id` INT NOT NULL AUTO_INCREMENT,
+    `spid` INT NOT NULL,
+    `advance_id` INT NOT NULL,
+    `amount` DECIMAL(18, 2) NOT NULL,
+    `createdby` INT NOT NULL,
+    `doc` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY(`id`)
+) ENGINE = INNODB;
+
+update suppliers set createdby = 1;  -- set createdby = id of superuser
+
+CREATE TABLE `other_rights`(
+    `id` INT NOT NULL AUTO_INCREMENT,
+    `menuid` INT NOT NULL,
+    `label` VARCHAR(50) NOT NULL,
+    `action` VARCHAR(50) NOT NULL,
+    PRIMARY KEY(`id`)
+) ENGINE = INNODB;
+
+CREATE TABLE `user_other_rights`(
+    `id` INT NOT NULL AUTO_INCREMENT,
+    `userid` INT NOT NULL,
+    `orid` INT NOT NULL COMMENT 'other right id',
+    PRIMARY KEY(`id`)
+) ENGINE = INNODB;
+
+
+ALTER TABLE `settings2` ADD `transfer_approval` TINYINT NOT NULL DEFAULT '0' AFTER `backup_password`;
+ALTER TABLE `settings2` ADD `lpo_approval` TINYINT NOT NULL DEFAULT '0' AFTER `transfer_approval`;
+ALTER TABLE `lpo` ADD `approvedby` INT NULL AFTER `doc`, ADD `approval_date` DATETIME NULL AFTER `approvedby`;
+
+CREATE TABLE `lpo_logs`(
+    `id` INT NOT NULL AUTO_INCREMENT,
+    `lpoid` INT NOT NULL,
+    `payload` TEXT NOT NULL,
+    `createdby` INT NOT NULL,
+    `doc` DATETIME NOT NULL,
+    PRIMARY KEY(`id`)
+) ENGINE = INNODB;
+
+ALTER TABLE `grn` ADD `approvedby` INT NULL AFTER `createdby`, ADD `approval_date` DATETIME NULL AFTER `approvedby`;
+ALTER TABLE `settings2` ADD `grn_approval` TINYINT NOT NULL DEFAULT '1' AFTER `lpo_approval`;
+update grn set approvedby = createdby, approval_date=doc; -- for previous grn only
+
+ALTER TABLE `grn`
+  DROP `base_totalAmount`,
+  DROP `base_full_amount`,
+  DROP `grand_base_vatamount`;
+
+  ALTER TABLE `grndetails`
+    DROP `lpoidetailid`,
+    DROP `serialno`,
+    DROP `serialid`,
+    DROP `base_rate`,
+    DROP `pro_cost`,
+    DROP `base_amount`,
+    DROP `barcode`,
+    DROP `model`,
+    DROP `vat_amount`,
+    DROP `base_vat_amount`;
+
+CREATE TABLE `grn_logs`(
+    `id` INT NOT NULL AUTO_INCREMENT,
+    `grnid` INT NOT NULL,
+    `payload` TEXT NOT NULL,
+    `createdby` INT NOT NULL,
+    `doc` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY(`id`)
+) ENGINE = INNODB;
+
+ALTER TABLE `supplier_payments` ADD `currency_rateid` INT NOT NULL AFTER `pmethod_id`, ADD `currency_amount` DECIMAL(18,2) NOT NULL AFTER `currency_rateid`;
+ALTER TABLE `supplier_advance_payments` ADD `currency_rateid` INT NOT NULL AFTER `pmethod_id`, ADD `currency_amount` DECIMAL(18,2) NOT NULL AFTER `currency_rateid`;
+
+ALTER TABLE `lpo`
+  DROP `base_totalAmount`,
+  DROP `base_full_amount`,
+  DROP `grand_base_vatamount`;
+
+ALTER TABLE `lpo` CHANGE `dom` `dom` DATETIME NULL ON UPDATE CURRENT_TIMESTAMP, CHANGE `modifiedby` `modifiedby` INT(11) NULL;
+
+
+ALTER TABLE `lpodetails`
+  DROP `base_rate`,
+  DROP `barcode`,
+  DROP `model`,
+  DROP `prod_cost`,
+  DROP `base_amount`,
+  DROP `vat_amount`,
+  DROP `base_vat_amount`,
+  DROP `dom`,
+  DROP `modifiedby`,
+  DROP `status`;
+
+ALTER TABLE `lpodetails` CHANGE `rate` `rate` DECIMAL(18,2) NOT NULL;
+
+
+
+
+
+INSERT INTO `submenus` (`id`, `menuid`, `label`, `module`, `action`, `sortno`, `status`) VALUES (NULL, '8', 'Transfer Requisition', 'stocks', 'transfer_requisition_list', '3', '1');
+INSERT INTO `menus` (`id`, `label`, `module`, `action`, `icon`, `sortno`, `status`) VALUES (NULL, 'Supplier Reports', '', '', 'fa fa-truck', '14', '1');
+
+-- 19 => supplier report menu id
+INSERT INTO `submenus` (`id`, `menuid`, `label`, `module`, `action`, `sortno`, `status`) VALUES (NULL, '19', 'Supplier Payment History', 'reports', 'supplier_payment_history', '4', '1');
+
+INSERT INTO `submenus` (`id`, `menuid`, `label`, `module`, `action`, `sortno`, `status`) VALUES (NULL, '17', 'Sales outstanding Detailed', 'reports', 'sales_outstanding_detailed', '11', '1');
+
+
+---  END OF 2 MAY UPDATES ---
+
+
+
+
+--Other user rights
+
+INSERT INTO `other_rights` (`id`, `menuid`, `label`, `action`)
+VALUES (NULL, '8', 'Edit GRN', 'edit_grn'), (NULL, '8', 'Cancel GRN', 'cancel_grn'), (NULL, '8', 'Pay Supplier', 'pay_supplier');
+INSERT INTO `other_rights` (`id`, `menuid`, `label`, `action`)
+VALUES (NULL, '15', 'Upload Image', 'upload_product_image'),
+ (NULL, '8', 'Edit LPO', 'edit_lpo'), (NULL, '8', 'Approve LPO', 'approve_lpo'),
+  (NULL, '8', 'Make GRN From LPO', 'make_grn_from_lpo'), (NULL, '8', 'Edit Transfer', 'edit_transfer'),
+   (NULL, '8', 'Approve Transfer', 'approve_transfer'), (NULL, '8', 'Edit GRN', 'edit_grn'),
+   (NULL, '8', 'Approve GRN', 'approve_grn'), (NULL, '8', 'Adjust Stock', 'adjust_stock'), (NULL, '8', 'Pay Supplier', 'pay_supplier');
+
+
+ALTER TABLE `lpo` ADD `auto_approve` TINYINT NOT NULL DEFAULT '0' AFTER `approval_date`;
+ALTER TABLE `stock_transfers` ADD `auto_approve` TINYINT NOT NULL DEFAULT '0' AFTER `doa`;
+ALTER TABLE `settings2` ADD `supplier_payment` TINYINT NOT NULL DEFAULT '0' AFTER `grn_approval`;
+ALTER TABLE `supplier_advance_payments` ADD `remark` TEXT NOT NULL AFTER `doc`;
+
+
+CREATE TABLE `transfer_requisitions`(
+    `id` INT NOT NULL AUTO_INCREMENT,
+    `location_from` INT NOT NULL,
+    `location_to` INT NOT NULL,
+    `remark` TEXT NOT NULL,
+    `createdby` INT NOT NULL,
+    `doc` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    `approvedby` INT NULL,
+    `approve_date` DATETIME NULL,
+    `auto_approve` TINYINT NOT NULL DEFAULT '0',
+    `modifiedby` INT NULL,
+    `dom` DATETIME NULL ON UPDATE CURRENT_TIMESTAMP,
+    PRIMARY KEY(`id`)
+) ENGINE = INNODB;
+
+
+CREATE TABLE `transfer_requisition_details`(
+    `id` INT NOT NULL AUTO_INCREMENT,
+    `reqid` INT NOT NULL COMMENT 'transfer requisition id',
+    `productid` INT NOT NULL,
+    `qty` INT NOT NULL,
+    `createdby` INT NOT NULL,
+    `doc` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY(`id`)
+) ENGINE = INNODB;
+
+ALTER TABLE `stock_transfers` ADD `reqid` INT NULL COMMENT 'transfer requisition id' AFTER `id`;
+ALTER TABLE `settings2` ADD `requisition_approval` TINYINT NOT NULL DEFAULT '0' AFTER `supplier_payment`;
+
+INSERT INTO `submenus` (`id`, `menuid`, `label`, `module`, `action`, `sortno`, `status`) VALUES (NULL, '17', 'Master Report', 'reports', 'master_report', '0', '1');
+
+
+-- query to find quick sales marked as detailed for update
+--SELECT * FROM `sales` where credit_days is null and `source` = 'detailed';
+ UPDATE `sales` set `source`='quick' where credit_days is null and `source` = 'detailed';
+
+INSERT INTO `submenus` (`id`, `menuid`, `label`, `module`, `action`, `sortno`, `status`) VALUES (NULL, '8', 'Opening Supplier Outstanding', 'suppliers', 'opening_outstanding_list', '13', '1');
+
+CREATE TABLE `supplier_opening_outstandings`(
+    `id` INT NOT NULL AUTO_INCREMENT,
+    `grnno` VARCHAR(20) NOT NULL,
+    `supplierid` INT NOT NULL,
+    `invoiceno` VARCHAR(20) NOT NULL,
+    `locationid` INT NOT NULL,
+    `currency_rateid` INT NOT NULL,
+    `currency_amount` DECIMAL(18, 2) NOT NULL,
+    `paymenttype` VARCHAR(10) NOT NULL DEFAULT 'credit',
+    `amount` DECIMAL(18, 2) NOT NULL,
+    `createdby` INT NOT NULL,
+    `doc` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    `modifiedby` INT NULL,
+    `dom` DATETIME NULL ON UPDATE CURRENT_TIMESTAMP,
+    PRIMARY KEY(`id`)
+) ENGINE = INNODB;
+
+ALTER TABLE `supplier_payment_details` ADD `openingid` INT NULL COMMENT 'opening outstanding' AFTER `grnid`;
+ALTER TABLE `supplier_payment_details` CHANGE `grnid` `grnid` INT(11) NULL;
+ALTER TABLE `settings2` ADD `transfer_required_requisition` TINYINT NOT NULL DEFAULT '0' AFTER `requisition_approval`;
+ALTER TABLE `settings2` ADD `grn_require_lpo` TINYINT NOT NULL DEFAULT '0' AFTER `transfer_required_requisition`;
+INSERT INTO `submenus` (`id`, `menuid`, `label`, `module`, `action`, `sortno`, `status`) VALUES (NULL, '17', 'CEO Report', 'reports', 'ceo_report', '0', '1');
+
+ALTER TABLE `sales` ADD `currency_rateid` INT NOT NULL AFTER `receipt_no`, ADD `currency_amount` DECIMAL(18,2) NOT NULL AFTER `currency_rateid`;
+-- update sales table exchange rate
+update sales set currency_rateid = 1,currency_amount = 1;
+
+---  END OF 14 MAY UPDATES ---
+
+
+
+ALTER TABLE `salespayments` ADD `currencyid` INT NOT NULL AFTER `receipt_type`;
+ALTER TABLE `salespayments` ADD `buying_rate` DECIMAL(18,2) NOT NULL AFTER `currencyid`;
+ALTER TABLE `salespayment_details` ADD `base_selling` DECIMAL(18,2) NOT NULL AFTER `amount`;
+
+-- update sales payment to use base currency
+update `salespayments` set currencyid = 1, buying_rate = 1;
+update `salespayment_details` set base_selling = 1;
+
+-- update advances to use base currency
+ALTER TABLE `advance_payments` ADD `currencyid` INT NOT NULL AFTER `pmethod_id`;
+update `advance_payments` set currencyid = 1;
+
+
+CREATE TABLE `sales_payment_used_advances`(
+    `id` INT NOT NULL AUTO_INCREMENT,
+    `spid` INT NOT NULL,
+    `advance_id` INT NOT NULL,
+    `amount` DECIMAL(18, 2) NOT NULL,
+    `createdby` INT NOT NULL,
+    `doc` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY(`id`)
+) ENGINE = INNODB;
+
+UPDATE `submenus` SET `action` = 'add_sales_new' WHERE `submenus`.`id` = 100; -- update add_sales url
+ALTER TABLE `orderdetails` ADD `vat_rate` DOUBLE NOT NULL AFTER `required_price`;
+ALTER TABLE `orders` ADD `currencyid` INT NOT NULL AFTER `id`;
+update orders set currencyid = 1; -- base currency id
+ALTER TABLE `orders` ADD `order_value` DECIMAL(18,2) NOT NULL AFTER `currencyid`;
+
+-- run query for order value =>  ?module=queries&action=order_value
+
+DROP TABLE `orderchecklists`, `orderdocuments`, `orderstatus`;
+
+UPDATE `submenus` SET `action` = 'quick_order' WHERE `submenus`.`id` = 91; -- update quick order url
+
+ALTER TABLE `salespayments`
+  DROP `from_advance`,
+  DROP `advance_amount`;
+
+UPDATE `settings` SET `version` = '3.0' WHERE `settings`.`id` = 1;
+
+ALTER TABLE `settings2` ADD `proforma_valid_days` INT NOT NULL DEFAULT '7' AFTER `grn_require_lpo`;
+
+ALTER TABLE `orders`
+  DROP `isnew`,
+  DROP `ordernumber`,
+  DROP `isfrom_jobcard`,
+  DROP `ticketid`;
+
+ALTER TABLE `proformas` CHANGE `gtotal` `proforma_value` DECIMAL(18,2) NOT NULL;
+ALTER TABLE `proformas`
+  DROP `currency_amount`,
+  DROP `base_totalAmount`,
+  DROP `date`;
+ALTER TABLE `proformas` CHANGE `currency_rateid` `currencyid` INT(11) NOT NULL;
+ALTER TABLE `proformas` CHANGE `validitydays` `validity_days` INT(11) NOT NULL;
+ALTER TABLE `proformas` CHANGE `paymentdays` `payment_days` INT(11) NOT NULL;
+
+ALTER TABLE `expenses` ADD `currencyid` INT NOT NULL AFTER `branchid`;
+UPDATE `expenses` set currencyid = 1; -- 1=> base currency id
+
+INSERT INTO `submenus` (`id`, `menuid`, `label`, `module`, `action`, `sortno`, `status`) VALUES (NULL, '17', 'Sales Payment Report', 'reports', 'sales_payment', '6', '1');
+INSERT INTO `submenus` (`id`, `menuid`, `label`, `module`, `action`, `sortno`, `status`) VALUES (NULL, '17', 'Sales Payment Report SR', 'reports', 'sales_payment_sr', '6', '1');
+
+ALTER TABLE `salespayments` ADD `source` ENUM('direct','receipt') NOT NULL DEFAULT 'direct' AFTER `paid_totalmount`;
+
+update salespayments
+set `source` = 'receipt'
+where id in (SELECT sp.id
+             FROM `salespayments` sp
+                      inner join salespayment_details spd on spd.salespaymentId = sp.id
+                      inner join sales on spd.salesid = sales.id
+             where sales.paymenttype = 'credit'
+             group by sp.id);
+
+
+
+
+ALTER TABLE `proformadetails`
+  DROP `total`,
+  DROP `base_amount`,
+  DROP `base_rate`,
+  DROP `currentcost`;
+  ALTER TABLE `proformadetails` CHANGE `rate` `vat_rate` DECIMAL(18,2) NOT NULL;
+ALTER TABLE `proformadetails` ADD `price` DECIMAL(18,2) NOT NULL AFTER `qty`;
+ALTER TABLE `proformadetails` CHANGE `proformaid` `proformaid` INT(11) NOT NULL AFTER `id`,CHANGE `productid` `productid` INT(11) NOT NULL AFTER `proformaid`;
+ALTER TABLE `proformas` CHANGE `dom` `dom` DATETIME NULL, CHANGE `modifiedby` `modifiedby` INT(11) NULL;
+ALTER TABLE `proformas` CHANGE `sales_status` `sales_status` ENUM('pending','closed') NOT NULL DEFAULT 'pending';
+
+
+-----  END OF 15 JUNE UPDATES ------
+
+
+UPDATE `submenus` SET `status` = '0' WHERE `submenus`.`id` = 137; -- disable order report
+UPDATE `submenus` SET `status` = '0' WHERE `submenus`.`id` = 142; -- disable profit loss report
+UPDATE `submenus` SET `status` = '0' WHERE `submenus`.`id` = 141; -- disable sales target report
+
+
+UPDATE `submenus` SET `status` = '1' WHERE `submenus`.`id` = 32;  -- => proforma list
+ALTER TABLE `proformas` ADD `terms_conditions` TEXT NOT NULL AFTER `description`;
+ALTER TABLE `proformadetails` ADD `productname` VARCHAR(100) NULL AFTER `productid`;
+ALTER TABLE `proformadetails` ADD `taxcategory` INT NULL AFTER `vat_rate`;
+ALTER TABLE `orders` ADD `proformaid` INT NOT NULL AFTER `currencyid`;
+UPDATE `submenus` SET `module` = 'proformas' WHERE `submenus`.`id` = 32;
+ALTER TABLE `proformas` ADD `holding_days` INT NOT NULL AFTER `payment_days`;
+ALTER TABLE `settings2` ADD `proforma_stock_holding_days` INT NOT NULL DEFAULT '7' AFTER `proforma_valid_days`;
+INSERT INTO `submenus` (`id`, `menuid`, `label`, `module`, `action`, `sortno`, `status`) VALUES (NULL, '16', 'Stock Holders', 'reports', 'stock_holders', '2', '1');
+ALTER TABLE `sales` ADD `op_reuse` TINYINT NOT NULL DEFAULT '0' COMMENT 'if proforma or order reuse' AFTER `proformaid`;
+ALTER TABLE `orders` ADD `op_reuse` TINYINT NOT NULL DEFAULT '0' AFTER `proformaid`;
+INSERT INTO `submenus` (`id`, `menuid`, `label`, `module`, `action`, `sortno`, `status`) VALUES (NULL, '13', 'Normal Order', 'sales', 'add_order', '3', '1');
+ALTER TABLE `other_rights` ADD `sort` INT NOT NULL AFTER `action`;
+
+TRUNCATE other_rights; -- => rebuild other rights table structure, user rights reassignment is required
+
+insert into other_rights values (NULL,8,'Add LPO','add_lpo',1);
+insert into other_rights values (NULL,8,'Edit LPO','edit_lpo',2);
+insert into other_rights values (NULL,8,'Approve LPO','approve_lpo',3);
+insert into other_rights values (NULL,8,'Add GRN','add_grn',4);
+insert into other_rights values (NULL,8,'Approve GRN','approve_grn',5);
+insert into other_rights values (NULL,8,'Cancel GRN','cancel_grn',6);
+insert into other_rights values (NULL,8,'Transfer Stock','transfer_stock',7);
+insert into other_rights values (NULL,8,'Approve Transfer','approve_transfer',8);
+insert into other_rights values (NULL,8,'Add Requisition','add_requisition',9);
+insert into other_rights values (NULL,8,'Approve Requisition','approve_requisition',10);
+insert into other_rights values (NULL,8,'Issue Expense','issue_expense',11);
+insert into other_rights values (NULL,8,'Approve Expense','approve_expense',12);
+insert into other_rights values (NULL,8,'Cancel Expense','cancel_expense',13);
+insert into other_rights values (NULL,8,'Adjust Stock','adjust_stock',14);
+insert into other_rights values (NULL,8,'Pay Supplier','pay_supplier',15);
+insert into other_rights values (NULL,13,'Edit Order','edit_order',1);
+insert into other_rights values (NULL,13,'Create Proforma','create_proforma',2);
+insert into other_rights values (NULL,13,'Edit Proforma','edit_proforma',3);
+insert into other_rights values (NULL,13,'Hold Stock','hold_stock',4);
+insert into other_rights values (NULL,13,'Approve credit invoice','approve_credit',5);
+insert into other_rights values (NULL,13,'Cancel Sale','cancel_sale',6);
+insert into other_rights values (NULL,13,'Refiscalize Invoice','refiscalize_invoice',7);
+insert into other_rights values (NULL,15,'Add Product','add_product',1);
+insert into other_rights values (NULL,15,'Edit Product','edit_product',2);
+insert into other_rights values (NULL,15,'Edit Price','edit_price',3);
+insert into other_rights values (NULL,15,'Upload Image','upload_product_image',4);
+insert into other_rights values (NULL,15,'View all Location Stock','view_all_location_stock',5);
+
+
+CREATE TABLE `sales_fiscalization`(
+    `id` INT AUTO_INCREMENT,
+    `salesid` INT NOT NULL,
+    `fiscalization_type` ENUM('efd', 'vfd', 'zvfd') NOT NULL,
+    `fiscalize_status_message` TEXT NOT NULL,
+    `receipt_num` VARCHAR(255) NOT NULL,
+    `receipt_date` DATETIME NOT NULL,
+    `receiptby` INT NOT NULL,
+    `rctvcode` VARCHAR(100) NOT NULL,
+    `znumber` VARCHAR(100) NOT NULL,
+    `vfd_qrcode` TEXT NOT NULL,
+    `receipt_v_num` VARCHAR(255) NOT NULL,
+    `bridge_invoice_num` TEXT NOT NULL,
+    `receipt_url` TEXT NOT NULL,
+    `vrnno` VARCHAR(50) NOT NULL,
+    `street` VARCHAR(50) NOT NULL,
+    `tinnumber` VARCHAR(50) NOT NULL,
+    `companyname` VARCHAR(50) NOT NULL,
+    `doc` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY(id)
+) ENGINE = INNODB;
+
+-- clear default tin and vrn
+UPDATE `settings` SET `tin` = '', `vrn` = '' WHERE `settings`.`id` = 1;
+
+-- run query for sale fiscalization info transfer =>  ?module=queries&action=transfer_fiscalized_sales
+
+ALTER TABLE `sales`
+                                DROP `vfgc`,
+                                DROP `vfdc`,
+                                DROP `ctrl_stock`,
+                                DROP `ticketid`,
+                                DROP `isreceipt_printed`,
+                                DROP `receipt_num`,
+                                DROP `bridge_invoice_num`,
+                                DROP `receipt_v_num`,
+                                DROP `receipt_date`,
+                                DROP `receipt_url`,
+                                DROP `receiptby`,
+                                DROP `receipt_numreceipt_num`,
+                                DROP `rctvcode`,
+                                DROP `znumber`,
+                                DROP `vrnno`,
+                                DROP `street`,
+                                DROP `tinnumber`,
+                                DROP `companyname`,
+                                DROP `fiscalize_status_message`,
+                                DROP `vfd_qrcode`,
+                                DROP `grand_base_amount`,
+                                DROP `grand_base_vatamount`;
+
+ALTER TABLE `sales` CHANGE `paymenttype` `paymenttype` VARCHAR(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'cash' AFTER `payment_status`;
+ALTER TABLE `orders` ADD `validity_days` INT NOT NULL AFTER `sales_closedby`;
+UPDATE `submenus` SET `module` = 'orders' WHERE `submenus`.`id` = 153; -- =>normal order url
+UPDATE `submenus` SET `module` = 'orders' WHERE `submenus`.`id` = 25; -- =>order list url
+
+ALTER TABLE `salesdetails`
+  DROP `currencyid`,
+  DROP `rateid`,
+  DROP `exchange_rate`,
+  DROP `base_price`,
+  DROP `base_amount`,
+  DROP `actual_vat`,
+  DROP `vat_amount`,
+  DROP `required_vat_amount`,
+  DROP `base_vat_amount`,
+  DROP `hidden_vat`,
+  DROP `serialid`,
+  DROP `serialno`,
+  DROP `target_detail_id`,
+  DROP `target_history`;
+
+
+CREATE TABLE `price_logs`(
+    `id` INT NOT NULL AUTO_INCREMENT,
+    `branchid` INT NOT NULL,
+    `productid` INT NOT NULL,
+    `costprice` DECIMAL(18, 2) NOT NULL,
+    `quicksale_price` DECIMAL(18, 2) NOT NULL,
+    `createdby` INT NOT NULL,
+    `doc` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    `modifiedby` INT NULL,
+    `dom` DATETIME NULL ON UPDATE CURRENT_TIMESTAMP,
+    `remarks` TEXT NOT NULL,
+    PRIMARY KEY(`id`)
+) ENGINE = INNODB;
+
+CREATE TABLE `current_prices`(
+    `id` INT NOT NULL AUTO_INCREMENT,
+    `branchid` INT NOT NULL,
+    `productid` INT NOT NULL,
+    `costprice` DECIMAL(18, 2) NOT NULL,
+    `quicksale_price` DECIMAL(18, 2) NOT NULL,
+    `logid` INT NOT NULL,
+    `createdby` INT NOT NULL,
+    `doc` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    `remarks` TEXT NOT NULL,
+    PRIMARY KEY(`id`)
+) ENGINE = INNODB;
+
+ALTER TABLE `hierarchicprices` ADD `branchid` INT NOT NULL AFTER `id`;
+update hierarchicprices set branchid = 1; -- check company branchid
+
+
+-- run query for price transfer =>  ?module=queries&action=transfer_prices&branchid=1       -- check company branchid
+
+DROP TABLE `averagepricelogs`;
+
+
+ALTER TABLE `grn` ADD `supplier_payment` TINYINT NOT NULL DEFAULT '0' AFTER `supplierid`;
+
+update grn set supplier_payment = 1 where grn.paymenttype = 'credit';
+
+-- ASK IF CLIENT NEED SUPPLIER PAYMENTS THEN CHANGE IN COMPANY SETTINGS
+
+-- quick sale price is only verified in grn entry and saved when approving grn
+ALTER TABLE `grndetails` ADD `quick_sale_price` DECIMAL(18,2) NOT NULL AFTER `rate`;
+
+-- grns action urls CHECK URL IN DATABASE FIRST BEFORE UPDATE
+UPDATE `submenus` SET `module` = 'grns' WHERE `submenus`.`id` = 27; -- grn list url
+UPDATE `submenus` SET `module` = 'grns' WHERE `submenus`.`id` = 107; -- canceled grn list
+UPDATE `submenus` SET `module` = 'grns' WHERE `submenus`.`id` = 59; -- grn return list
+UPDATE `submenus` SET `module` = 'grns' WHERE `submenus`.`id` = 26; -- lpo list
+UPDATE `submenus` SET `module` = 'grns' WHERE `submenus`.`id` = 110; -- add serialno
+
+ALTER TABLE `price_logs` ADD `gdi` INT NOT NULL AFTER `quicksale_price`;
+
+ALTER TABLE `stock_transfers` ADD `transfer_cost` DECIMAL(18,2) NOT NULL AFTER `location_to`;
+
+ALTER TABLE `products`
+  DROP `min_qty`,
+  DROP `max_qty`,
+  DROP `quicksale_price`,
+  DROP `flag`,
+  DROP `costprice`,
+  DROP `avgprice`;
+
+  ALTER TABLE `lpo` ADD `expecting_days` INT NOT NULL AFTER `status`;
+  INSERT INTO `submenus` (`id`, `menuid`, `label`, `module`, `action`, `sortno`, `status`) VALUES (NULL, '16', 'Advanced Stock Report', 'stocks', 'advanced_stock_report', '2', '1');
+  ALTER TABLE `sales_canceled` ADD `invoiceno` VARCHAR(100) NOT NULL AFTER `saleid`;
+
+  -- run url => ?module=queries&action=fix_canceled_invoiceno
+
+  INSERT INTO `other_rights` (`id`, `menuid`, `label`, `action`, `sort`) VALUES (NULL, '15', 'Print Barcode', 'print_barcode', '6');
+  INSERT INTO `other_rights` (`id`, `menuid`, `label`, `action`, `sort`) VALUES (NULL, '15', 'Edit Cost Price', 'edit_costprice', '7');
+  INSERT INTO `submenus` (`id`, `menuid`, `label`, `module`, `action`, `sortno`, `status`) VALUES (NULL, '15', 'Price History', 'hierarchics', 'price_history', '15', '1');
+  ALTER TABLE `sales` ADD `total_discount` DECIMAL(18,2) NOT NULL DEFAULT '0' AFTER `full_amount`;
+  ALTER TABLE `salesdetails` ADD `discount` DECIMAL(18,2) NOT NULL DEFAULT '0' AFTER `price`;
+  INSERT INTO `other_rights` (`id`, `menuid`, `label`, `action`, `sort`) VALUES (NULL, '13', 'Sale Random Batch', 'sale_random_batch', '9');
+
+ALTER TABLE `settings2` CHANGE `change_quick_price` `quicksale_discount` TINYINT(4) NOT NULL DEFAULT '0';
+ALTER TABLE `settings2` ADD `discount_mode` ENUM('exclusive','inclusive') NOT NULL DEFAULT 'exclusive' AFTER `quicksale_discount`;
+
+ALTER TABLE `sales` ADD `token` TEXT NOT NULL AFTER `dom`;
+ALTER TABLE `settings` CHANGE `zvfd_ID` `zvfd_integration_id` VARCHAR(100) CHARACTER SET latin1 COLLATE latin1_swedish_ci NOT NULL;
+ALTER TABLE `settings` ADD `zvfd_tax_type` INT NOT NULL DEFAULT '1' AFTER `group_product`;
+ALTER TABLE `grn` ADD `auto_approve` TINYINT NOT NULL DEFAULT '0' AFTER `approval_date`;
+
+INSERT INTO `other_rights` (`id`, `menuid`, `label`, `action`, `sort`) VALUES (NULL, '13', 'Issue Credit Note', 'issue_credit_note', '10');
+
+CREATE TABLE `sales_returns` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `salesid` int(11) NOT NULL,
+  `currencyid` int(11) NOT NULL,
+  `currency_amount` decimal(18,2) NOT NULL,
+  `type` enum('price','item','full') NOT NULL DEFAULT 'item',
+  `total_excamount` decimal(18,2) NOT NULL,
+  `total_vatamount` decimal(18,2) NOT NULL,
+  `total_incamount` decimal(18,2) NOT NULL,
+  `createdby` int(11) NOT NULL,
+  `approvedby` int(11) NOT NULL,
+  `approval_date` datetime NOT NULL,
+  `doc` datetime NOT NULL DEFAULT current_timestamp(),
+  `modifiedby` int(11) DEFAULT NULL,
+  `dom` datetime DEFAULT NULL,
+  `description` text NOT NULL,
+  `status` varchar(15) NOT NULL DEFAULT 'active',
+  `return_amount` decimal(18,2) NOT NULL,
+  `pmethod_id` int(11) NOT NULL,
+  `chequename` varchar(255) NOT NULL,
+  `chequetype` enum('Normal','PDC') DEFAULT NULL,
+  `bankname` varchar(255) NOT NULL,
+  `bankreference` varchar(255) NOT NULL,
+  `credit_cardno` varchar(255) NOT NULL,
+  PRIMARY KEY(`id`)
+) ENGINE=InnoDB;
+
+CREATE TABLE `sales_return_batches` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `srdid` int(11) NOT NULL,
+  `batchid` int(11) NOT NULL,
+  `qty` int(11) NOT NULL,
+  PRIMARY KEY(`id`)
+) ENGINE=InnoDB;
+
+CREATE TABLE `sales_return_details` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `srid` int(11) NOT NULL,
+  `sdi` int(11) NOT NULL,
+  `rate` decimal(18,2) NOT NULL,
+  `qty` int(11) NOT NULL,
+  `vat_rate` decimal(18,2) NOT NULL,
+  `doc` datetime NOT NULL DEFAULT current_timestamp(),
+  `remarks` text NOT NULL,
+  PRIMARY KEY(`id`)
+) ENGINE=InnoDB;
+
+CREATE TABLE `sales_return_serialnos` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `srdid` int(11) NOT NULL,
+  `snoid` int(11) NOT NULL,
+  `doc` datetime NOT NULL DEFAULT current_timestamp(),
+  PRIMARY KEY(`id`)
+) ENGINE=InnoDB;
+
+
+
+
+
+INSERT INTO `submenus` (`id`, `menuid`, `label`, `module`, `action`, `sortno`, `status`) VALUES (NULL, '13', 'Credit Notes', 'sales_returns', 'list', '7', '1');
+
+ALTER TABLE `sales` ADD `total_increturn` DECIMAL(18,2) NOT NULL AFTER `lastpaid_totalamount`;
+ALTER TABLE `advance_payments` ADD `srid` INT NOT NULL COMMENT 'sales return id' AFTER `remark`;
+
+INSERT INTO `other_rights` (`id`, `menuid`, `label`, `action`, `sort`) VALUES (NULL, '13', 'Receive Outstanding payment', 'receive_credit_payment', '12');
+
+update `users` set roleid = 2 where roleid = 3;
+DELETE FROM `roles` WHERE `roles`.`id` = 3;
+
+ALTER TABLE `paymentmethods`
+  DROP `dom`,
+  DROP `modifiedby`;
+
+INSERT INTO `paymentmethods` (`id`, `name`, `status`, `doc`, `createdby`) VALUES (NULL, 'From Credit Note', 'active', '2019-11-27 10:09:32', '1');
+ALTER TABLE `expenses` ADD `approvedby` INT NULL AFTER `dom`, ADD `approval_date` DATETIME NULL AFTER `approvedby`, ADD `auto_approve` INT NOT NULL DEFAULT '0' AFTER `approval_date`;
+ALTER TABLE `settings2` ADD `expense_approval` INT NOT NULL DEFAULT '1' AFTER `transfer_approval`;
+update expenses set approvedby = createdby,approval_date=doc,auto_approve=1;
+ALTER TABLE `sales` DROP `iscost_added`;
+ALTER TABLE `stock_adjustments` ADD `token` TEXT NOT NULL AFTER `doc`;
+ALTER TABLE `grn` ADD `token` TEXT NOT NULL AFTER `dom`;
+ALTER TABLE `taxcode` DROP `vat_percent`;
+INSERT INTO `submenus` (`id`, `menuid`, `label`, `module`, `action`, `sortno`, `status`) VALUES (NULL, '16', 'Branches Stock Report', 'stocks', 'branches_stock', '2', '1');
+
+CREATE TABLE `sales_serialnos`(
+    `id` INT NOT NULL AUTO_INCREMENT,
+    `sdi` INT NOT NULL,
+    `snoid` INT NOT NULL,
+    `doc` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY(`id`)
+) ENGINE = INNODB;
+
+ALTER TABLE `serialnos` DROP `product_id`;
+INSERT INTO `submenus` (`id`, `menuid`, `label`, `module`, `action`, `sortno`, `status`) VALUES (NULL, '16', 'Serial Nos', 'reports', 'serialnos', '9', '1');
+INSERT INTO `submenus` (`id`, `menuid`, `label`, `module`, `action`, `sortno`, `status`) VALUES (NULL, '15', 'Barcode Setting', 'products', 'barcode_setting', '21', '1');
+ALTER TABLE `settings2` ADD `barcode_settings` TEXT NOT NULL AFTER `proforma_stock_holding_days`;
+INSERT INTO `submenus` (`id`, `menuid`, `label`, `module`, `action`, `sortno`, `status`) VALUES (NULL, '13', 'Opening Client Outstanding', 'sales', 'opening_outstanding', '19', '1');
+
+CREATE TABLE `client_opening_outstanding`(
+    `id` INT NOT NULL AUTO_INCREMENT,
+    `invoiceno` VARCHAR(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+    `currencyid` INT NOT NULL,
+    `currency_amount` DECIMAL(18, 2) NOT NULL,
+    `clientid` INT NOT NULL,
+    `locationid` INT NOT NULL,
+    `description` TEXT NOT NULL,
+    `payment_status` ENUM('pending', 'partial', 'complete') NOT NULL DEFAULT 'pending',
+    `outstanding_amount` DECIMAL(18, 2) NOT NULL,
+    `paid_amount` DECIMAL(18, 2) NOT NULL,
+    `invoicedate` DATE NOT NULL,
+    `credit_days` INT NOT NULL,
+    `createdby` INT NOT NULL,
+    `doc` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY(`id`)
+) ENGINE = INNODB;
+
+
+ALTER TABLE `salespayment_details` ADD `opening` TINYINT NOT NULL DEFAULT '0' AFTER `base_selling`;
+ALTER TABLE `salespayments` ADD `token` TEXT NOT NULL AFTER `dom`;
+
+ALTER TABLE `settings` DROP `zvfd_tax_type`;
+ALTER TABLE `settings` ADD `deviceno` VARCHAR(100) NOT NULL AFTER `group_product`, ADD `fcode` VARCHAR(100) NOT NULL AFTER `deviceno`, ADD `fcodetoken` TEXT NOT NULL AFTER `fcode`;
+INSERT INTO `other_rights` (`id`, `menuid`, `label`, `action`, `sort`) VALUES (NULL, '15', 'Edit Reorder Level', 'edit_reorder_level', '10');
+ALTER TABLE `users`
+  DROP `random_batch`,
+  DROP `edit_level`;
+UPDATE `submenus` SET `status` = '0' WHERE `submenus`.`id` = 119;  -- ledger account report
+INSERT INTO `submenus` (`id`, `menuid`, `label`, `module`, `action`, `sortno`, `status`) VALUES (NULL, '18', 'Client Ledger SR', 'reports', 'client_ledger_sr', '4', '1');
+INSERT INTO `submenus` (`id`, `menuid`, `label`, `module`, `action`, `sortno`, `status`) VALUES (NULL, '16', 'Stock Age-wise Report', 'stocks', 'stock_aging_report', '2', '1');
+INSERT INTO `other_rights` (`id`, `menuid`, `label`, `action`, `sort`) VALUES (NULL, '13', 'Approve Credit Note', 'approve_credit_note', '10');
+ALTER TABLE `grndetails` ADD `billable_qty` INT NOT NULL AFTER `qty`;
+update `grndetails` set billable_qty = qty;
+ALTER TABLE `grn` ADD `adjustment_amount` DECIMAL(18,2) NOT NULL AFTER `full_amount`;
+ALTER TABLE `grn` CHANGE `grand_vatamount` `grand_vatamount` DECIMAL(18,2) NOT NULL AFTER `total_amount`;
+
+INSERT INTO `other_rights` (`id`, `menuid`, `label`, `action`, `sort`) VALUES
+(NULL, '8', 'Approve Other LPO', 'approve_other_lpo', '20'),
+ (NULL, '8', 'Approve Other GRN', 'approve_other_grn', '21'),
+ (NULL, '8', 'Approve Other Transfer', 'approve_other_transfer', '22'),
+  (NULL, '8', 'Approve Other Requisition', 'approve_other_requisition', '23'),
+(NULL, '8', 'Approver Other Expense', 'approve_other_expense', '24'),
+(NULL, '13', 'Approve Other Credit Invoice', 'approve_other_credit_invoice', '20'),
+(NULL, '13', 'Approve Other Credit Note', 'approve_other_credit_note', '21');
+
+INSERT INTO `other_rights` (`id`, `menuid`, `label`, `action`, `sort`) VALUES (NULL, '13', 'Receive Advance Payment', 'receive_advance', '9');
+UPDATE `settings` SET `version` = '4.0' WHERE `settings`.`id` = 1;
+ALTER TABLE `roles` ADD `status` ENUM('active','inactive') NOT NULL DEFAULT 'active' AFTER `name`,
+ ADD `createdby` INT NOT NULL AFTER `status`,
+  ADD `doc` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP AFTER `createdby`,
+   ADD `modifiedby` INT NULL AFTER `doc`,
+    ADD `dom` DATETIME NULL AFTER `modifiedby`;
+
+update roles set createdby = 1; -- check super user id
+
+CREATE TABLE `role_rights`(
+    `id` INT NOT NULL AUTO_INCREMENT,
+    `roleid` INT NOT NULL,
+    `submenuid` INT NOT NULL,
+    `createdby` INT NOT NULL,
+    `doc` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY(`id`)
+) ENGINE = INNODB;
+
+CREATE TABLE `role_other_rights`(
+    `id` INT NOT NULL AUTO_INCREMENT,
+    `roleid` INT NOT NULL,
+    `orid` INT NOT NULL,
+    PRIMARY KEY(`id`)
+) ENGINE = INNODB;
+
+DROP TABLE `userrights`, `user_other_rights`;
+INSERT INTO `submenus` (`id`, `menuid`, `label`, `module`, `action`, `sortno`, `status`) VALUES (NULL, '1', 'Roles', 'roles', 'roles_list', '5', '1');
+INSERT INTO `submenus` (`id`, `menuid`, `label`, `module`, `action`, `sortno`, `status`) VALUES (NULL, '18', 'Clients History', 'reports', 'client_history', '5', '1');
+INSERT INTO `submenus` (`id`, `menuid`, `label`, `module`, `action`, `sortno`, `status`) VALUES (NULL, '19', 'Supplier History', 'reports', 'supplier_history', '5', '1');
+ALTER TABLE `stock_transfers` ADD `token` TEXT NOT NULL AFTER `dom`;
+
+-- END OF SEPT UPDATES --
+
+INSERT INTO `other_rights` (`id`, `menuid`, `label`, `action`, `sort`) VALUES (NULL, '13', 'Quick Sale Discount', 'sale_discount', '9');
+
+ALTER TABLE `products` ADD `non_stock` TINYINT NOT NULL DEFAULT '0' AFTER `departid`;
+ALTER TABLE `salesdetails` ADD `productid` INT NULL AFTER `stockid`;
+ALTER TABLE `sales_returns` ADD `token` TEXT NOT NULL AFTER `credit_cardno`;
+
+INSERT INTO `other_rights` (`id`, `menuid`, `label`, `action`, `sort`) VALUES (NULL, '1', 'Add Client', 'add_client', '1'), (NULL, '1', 'Edit Client', 'edit_client', '2'), (NULL, '1', 'Assign Royalty Card', 'assign_royalty_card', '3');
+INSERT INTO `other_rights` (`id`, `menuid`, `label`, `action`, `sort`) VALUES (NULL, '1', 'Add Supplier', 'add_supplier', '4'), (NULL, '1', 'Edit Supplier', 'edit_supplier', '5');
+
+ALTER TABLE `suppliers` ADD `vat_registered` TINYINT NOT NULL DEFAULT '1' AFTER `tin`;
+ALTER TABLE `suppliers` CHANGE `contact_mobile` `contact_mobile` VARCHAR(50) NOT NULL;
+ALTER TABLE `suppliers` ADD `country_code` VARCHAR(10) NOT NULL AFTER `contact_name`;
+ALTER TABLE `clients` ADD `mobile_country_code` VARCHAR(10) NOT NULL AFTER `vatno`;
+ALTER TABLE `contacts` ADD `name` VARCHAR(100) NOT NULL AFTER `id`;
+update contacts set name = concat(fname,' ',mname,' ',lname);
+-- check contacts table after update if contacts not lost then continue
+
+ALTER TABLE `contacts`
+  DROP `fname`,
+  DROP `mname`,
+  DROP `lname`;
+
+INSERT INTO `submenus` (`id`, `menuid`, `label`, `module`, `action`, `sortno`, `status`) VALUES (NULL, '17', 'Cash Summary User-Wise', 'reports', 'cash_summary_userwise', '10', '1');
+
+ALTER TABLE `settings2` ADD `show_generic_name` TINYINT NOT NULL DEFAULT '1' AFTER `barcode_settings`,
+ ADD `show_category` TINYINT NOT NULL DEFAULT '1' AFTER `show_generic_name`,
+  ADD `show_brand` TINYINT NOT NULL DEFAULT '1' AFTER `show_category`,
+   ADD `show_department` TINYINT NOT NULL DEFAULT '1' AFTER `show_brand`;
+
+UPDATE `submenus` SET `label` = 'Advance Receipts' WHERE `submenus`.`id` = 102; -- Advance Payments
+UPDATE `submenus` SET `label` = 'Sales Receipt Report' WHERE `submenus`.`id` = 150; -- Sales Payment Report
+UPDATE `submenus` SET `label` = 'Sales Receipt Report SR' WHERE `submenus`.`id` = 151; -- Sales Payment Report SR
+ALTER TABLE `contacts` CHANGE `positionid` `positionid` VARCHAR(100) NOT NULL;
+ALTER TABLE `contacts` CHANGE `positionid` `position` VARCHAR(100) CHARACTER SET latin1 COLLATE latin1_swedish_ci NOT NULL;
+INSERT INTO `submenus` (`id`, `menuid`, `label`, `module`, `action`, `sortno`, `status`) VALUES (NULL, '17', 'Non Stock Sales Report', 'reports', 'non_stock_sales_report', '5', '1');
+INSERT INTO `submenus` (`id`, `menuid`, `label`, `module`, `action`, `sortno`, `status`) VALUES (NULL, '17', 'Non Stock Sales Report SR', 'reports', 'non_stock_sales_report_sr', '5', '1');
+ALTER TABLE `settings2` ADD `printing_show_description` TINYINT NOT NULL DEFAULT '0' AFTER `show_department`;
+ALTER TABLE `sales` CHANGE `vat_status` `vat_exempted` TINYINT NOT NULL DEFAULT '0';
+
+-- SHAKIL UPDATES --
+
+
+INSERT INTO `submenus` (`id`, `menuid`, `label`, `module`, `action`, `sortno`, `status`) VALUES (NULL, '18', 'Clients Monthly Sale Summary', 'reports', 'client_monthly_sale_summary', '6', '1');
+ALTER TABLE `expenses` ADD `verificationcode` VARCHAR(100) NOT NULL AFTER `invoiceno`;
+ALTER TABLE `expenses` CHANGE `invoiceno` `invoiceno` VARCHAR(100) NOT NULL;
+INSERT INTO `submenus` (`id`, `menuid`, `label`, `module`, `action`, `sortno`, `status`) VALUES (NULL, '15', 'Export Product Price', 'hierarchics', 'export_price_list', '13', '1');
+ALTER TABLE `salesdetails` ADD `base_percentage` DECIMAL(18,2) NOT NULL AFTER `vat_rate`, ADD `points` DECIMAL(18,2) NOT NULL AFTER `base_percentage`;
+ALTER TABLE `locations` CHANGE `address` `address` TEXT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL;
+ALTER TABLE `other_rights` ADD `description` TEXT NOT NULL AFTER `sort`;
+INSERT INTO `other_rights` (`id`, `menuid`, `label`, `action`, `sort`, `description`) VALUES (NULL, '15', 'Admin View', 'admin_view', '11', '');
+INSERT INTO `other_rights` (`id`, `menuid`, `label`, `action`, `sort`, `description`) VALUES (NULL, '13', 'Sale Other Order', 'sale_other_order', '1', '');
+INSERT INTO `other_rights` (`id`, `menuid`, `label`, `action`, `sort`, `description`) VALUES (NULL, '16', 'View branch Stock', 'view_branch_stock', '1', '');
+INSERT INTO `other_rights` (`id`, `menuid`, `label`, `action`, `sort`, `description`) VALUES (NULL, '16', 'View All branch Stock', 'view_all_branch_stock', '2', '');
+
+ALTER TABLE `clients` ADD `acc_mng` INT NOT NULL AFTER `secondemail`;
+INSERT INTO `submenus` (`id`, `menuid`, `label`, `module`, `action`, `sortno`, `status`) VALUES (NULL, '8', 'Add Product Serial No', 'serialnos', 'add_product_serialno', '11', '1');
+UPDATE `submenus` SET `label` = 'Add GRN Serial No' WHERE `submenus`.`id` = 110; -- Add Serial No
+
+update grn set vat_registered = 1;  -- discuss
+UPDATE `settings` SET `version` = '4.1' WHERE `settings`.`id` = 1;
+
+-- Conso update --
+
+ALTER TABLE `serialnos` CHANGE `source` `source` ENUM('grn','sale','transfer','return','upload') CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT 'grn';
+ALTER TABLE `serialnos` ADD `initial_stockid` INT NOT NULL AFTER `number`;
+INSERT INTO `submenus` (`id`, `menuid`, `label`, `module`, `action`, `sortno`, `status`) VALUES (NULL, '17', 'Sales by Order Report', 'reports', 'sales_by_order_report', '16', '1'),
+    (NULL, '17', 'Sales by Order Report SR', 'reports', 'sales_by_order_report_sr', '17', '1');
+INSERT INTO `submenus` (`id`, `menuid`, `label`, `module`, `action`, `sortno`, `status`) VALUES (NULL, '15', 'Products With Stock', 'products', 'product_with_stock', '2', '1');
+ALTER TABLE `users` ADD `sr_default` ENUM('','A4','small') NOT NULL AFTER `receipt_type`;
+
+-- d3b2482 git --
+
+INSERT INTO `submenus` (`id`, `menuid`, `label`, `module`, `action`, `sortno`, `status`) VALUES (NULL, '8', 'Tally Transfers', 'tally', 'tally_transfers', '14', '1');
+ALTER TABLE `departments` CHANGE `tally_tax_leadger` `tally_sales_account` VARCHAR(100) NULL;
+ALTER TABLE `locations` ADD `tally_cash_ledger` VARCHAR(100) NOT NULL AFTER `branchid`;
+-- ALTER TABLE `clients` ADD `ledgername` VARCHAR(100) NOT NULL AFTER `name`;
+ALTER TABLE `suppliers` ADD `ledgername` VARCHAR(100) NOT NULL AFTER `name`;
+
+CREATE TABLE `banks`(
+    `id` INT NOT NULL AUTO_INCREMENT,
+    `name` VARCHAR(100) NOT NULL,
+    `accno` VARCHAR(150) NOT NULL,
+    `ledgername` VARCHAR(100) NOT NULL,
+    `createdby` INT NOT NULL,
+    `doc` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    `modifiedby` INT NULL,
+    `dom` DATETIME NULL,
+    `status` ENUM('active', 'inactive') NOT NULL,
+    PRIMARY KEY(`id`)
+) ENGINE = INNODB;
+
+INSERT INTO `submenus` (`id`, `menuid`, `label`, `module`, `action`, `sortno`, `status`) VALUES (NULL, '1', 'Banks', 'banks', 'list', '11', '1');
+
+-- LATEST DEMO UPDATES --
+
+ALTER TABLE `sales` ADD `tally_trxno` TEXT NOT NULL AFTER `token`;
+ALTER TABLE `sales` ADD `tally_message` TEXT NOT NULL AFTER `tally_trxno`;
+
+DROP TABLE `tally_transfers`;
+
+CREATE TABLE `tally_transfers`(
+    `id` INT NOT NULL AUTO_INCREMENT,
+    `date` VARCHAR(20) NOT NULL,
+    `partno` INT NOT NULL,
+    `ledgername` VARCHAR(100) NOT NULL,
+    `dr_cr` VARCHAR(5) NOT NULL,
+    `amount` DECIMAL(18, 2) NOT NULL,
+    `reference` VARCHAR(100) NOT NULL,
+    `voucher_type` VARCHAR(100) NOT NULL,
+    `sourceid` INT NOT NULL,
+    `trxno` TEXT NOT NULL,
+    `createdby` INT NOT NULL,
+    `doc` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY(`id`)
+) ENGINE = INNODB;
+
+ALTER TABLE `settings` ADD `tally_direct` TINYINT NOT NULL DEFAULT '1' AFTER `tally_status`;
+ALTER TABLE `advance_payments` ADD `bankid` INT NOT NULL AFTER `approvedate`;
+ALTER TABLE `branches` ADD `tally_cash_ledger` VARCHAR(100) NOT NULL AFTER `name`;
+ALTER TABLE `advance_payments` ADD `tally_post` TINYINT NOT NULL DEFAULT '0' AFTER `dom`, ADD `tally_trxno` TEXT NOT NULL AFTER `tally_post`,
+ ADD `tally_message` TEXT NOT NULL AFTER `tally_trxno`;
+
+CREATE TABLE `electronic_accounts`(
+    `id` INT NOT NULL AUTO_INCREMENT,
+    `name` VARCHAR(100) NOT NULL,
+    `accno` VARCHAR(150) NOT NULL,
+    `ledgername` VARCHAR(100) NOT NULL,
+    `createdby` INT NOT NULL,
+    `doc` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    `modifiedby` INT NULL,
+    `dom` DATETIME NULL,
+    `status` ENUM('active', 'inactive') NOT NULL,
+    PRIMARY KEY(`id`)
+) ENGINE = INNODB;
+
+INSERT INTO `submenus` (`id`, `menuid`, `label`, `module`, `action`, `sortno`, `status`) VALUES (NULL, '1', 'Electronic Accounts', 'electronic_accounts', 'list', '11', '1');
+ALTER TABLE `salespayments` ADD `eaccid` INT NOT NULL AFTER `bankreference`;
+ALTER TABLE `advance_payments` ADD `eaccid` INT NOT NULL AFTER `bankreference`;
+ALTER TABLE `advance_payments` ADD `token` TEXT NOT NULL AFTER `dom`;
+ALTER TABLE `salespayments` ADD `bankid` INT NOT NULL AFTER `chequetype`;
+ALTER TABLE `sales_returns` ADD `bankid` INT NOT NULL AFTER `chequetype`;
+ALTER TABLE `sales_returns` ADD `eaccid` INT NOT NULL AFTER `bankreference`;
+ALTER TABLE `supplier_payment_info` ADD `bankid` INT NOT NULL AFTER `chequetype`;
+ALTER TABLE `supplier_payment_info` ADD `eaccid` INT NOT NULL AFTER `bankreference`;
+ALTER TABLE `salesdetails` ADD `incprice` DECIMAL(18,2) NOT NULL AFTER `price`, ADD `sinc` TINYINT NOT NULL AFTER `incprice`;
+ALTER TABLE `current_prices` ADD `quick_price_inc` DECIMAL(18,2) NOT NULL AFTER `quicksale_price`;
+ALTER TABLE `price_logs` ADD `quick_price_inc` DECIMAL(18,2) NOT NULL AFTER `quicksale_price`;
+
+-- run url => ?module=queries&action=quick_price_fix
+
+ALTER TABLE `orderdetails` ADD `incprice` DECIMAL(18,2) NOT NULL AFTER `price`, ADD `sinc` TINYINT NOT NULL AFTER `incprice`;
+ALTER TABLE `branches` ADD `cost_center` VARCHAR(100) NOT NULL AFTER `tally_cash_ledger`;
+ALTER TABLE `sales` ADD `transfer_tally` TINYINT NOT NULL DEFAULT '0' AFTER `approvedate`;
+ALTER TABLE `expenses_attributes` ADD `ledgername` VARCHAR(100) NOT NULL AFTER `name`;
+ALTER TABLE `tally_transfers` ADD `sourcetable` VARCHAR(100) NOT NULL AFTER `voucher_type`;
+ALTER TABLE `advance_payments` ADD `transfer_tally` TINYINT NOT NULL DEFAULT '0' AFTER `token`;
+
+ALTER TABLE `salespayments` ADD `transfer_tally` TINYINT NOT NULL DEFAULT '0' AFTER `token`,
+    ADD `tally_post` TINYINT NOT NULL DEFAULT '0' AFTER `transfer_tally`,
+    ADD `tally_trxno` TEXT NOT NULL AFTER `tally_post`, ADD `tally_message` TEXT NOT NULL AFTER `tally_trxno`;
+
+INSERT INTO `submenus` (`id`, `menuid`, `label`, `module`, `action`, `sortno`, `status`) VALUES (NULL, '8', 'Pending Tally Transfers', 'tally', 'pending_transfers', '15', '1');
+ALTER TABLE `expenses` ADD `transfer_tally` TINYINT NOT NULL DEFAULT '0' AFTER `status`, ADD `tally_post` TINYINT NOT NULL DEFAULT '0' AFTER `transfer_tally`, ADD `tally_trxno` TEXT NULL AFTER `tally_post`, ADD `tally_message` TEXT NULL AFTER `tally_trxno`;
+
+ALTER TABLE `sales_payment_used_advances` ADD `tally_post` TINYINT NOT NULL DEFAULT '0' AFTER `doc`,
+ ADD `tally_trxno` TEXT NOT NULL AFTER `tally_post`,  ADD `tally_message` TEXT NOT NULL AFTER `tally_trxno`;
+
+ ALTER TABLE `sales_returns` ADD `transfer_tally` TINYINT NOT NULL DEFAULT '0' AFTER `token`,
+  ADD `tally_post` TINYINT NOT NULL DEFAULT '0' AFTER `transfer_tally`, ADD `tally_trxno` TEXT NOT NULL AFTER `tally_post`,
+   ADD `tally_message` TEXT NOT NULL AFTER `tally_trxno`;
+
+ALTER TABLE `sales_return_details` ADD `sinc` TINYINT NOT NULL DEFAULT '0' AFTER `vat_rate`, ADD `return_amount` DECIMAL(18,2) NOT NULL AFTER `sinc`;
+ALTER TABLE `sales_returns` ADD `tally_payment_trxno` TEXT NOT NULL AFTER `tally_message`;
+
+ALTER TABLE `settings` ADD `tally_control_ac` VARCHAR(100) NOT NULL AFTER `tally_name`;
+INSERT INTO `submenus` (`id`, `menuid`, `label`, `module`, `action`, `sortno`, `status`) VALUES (NULL, '8', 'Issued Expense Detailed', 'expenses', 'issued_list_detailed', '4', '1');
+ALTER TABLE `branches` ADD `tally_purchase_account` VARCHAR(100) NOT NULL AFTER `cost_center`;
+
+ALTER TABLE `grn` ADD `transfer_tally` TINYINT NOT NULL DEFAULT '0' AFTER `token`, ADD `tally_post` TINYINT NOT NULL DEFAULT '0' AFTER `transfer_tally`,
+ ADD `tally_trxno` TEXT NOT NULL AFTER `tally_post`, ADD `tally_message` TEXT NOT NULL AFTER `tally_trxno`;
+
+ALTER TABLE `settings` ADD `tally_adjustment_ledger` VARCHAR(100) NOT NULL AFTER `tally_control_ac`;
+
+
+
+DELETE FROM `menus` WHERE status=0;
+INSERT INTO `menus` (`id`, `label`, `module`, `action`, `icon`, `sortno`, `status`) VALUES (NULL, 'Utilities', '', '', 'fa fa-wrench', '15', '1');
+
+-- menuid (20) = utilities menuid
+INSERT INTO `submenus` (`id`, `menuid`, `label`, `module`, `action`, `sortno`, `status`)
+ VALUES (NULL, '20', 'Import products', 'import', 'products', '1', '1'),
+ (NULL, '20', 'Import stocks', 'import', 'stocks', '2', '1'),
+  (NULL, '20', 'Import Clients', 'import', 'clients', '3', '1'),
+  (NULL, '20', 'Import Sales Outstanding', 'import', 'sales_outstanding', '4', '1');
+
+  ALTER TABLE `clients` ADD `impno` INT NULL DEFAULT NULL AFTER `status`;
+
+
+
+ALTER TABLE `users` CHANGE `sr_default` `default_print_size` ENUM('','A4','small') CHARACTER SET latin1 COLLATE latin1_swedish_ci NOT NULL;
+ALTER TABLE `sales` ADD `print_size` VARCHAR(10) NOT NULL AFTER `receipt_method`;
+ALTER TABLE `clients` CHANGE `impno` `impno` VARCHAR(10) NULL DEFAULT NULL;
+
+
+---- after separation ---
+
+ALTER TABLE `sales_fiscalization` ADD `efd_download_attempt` INT NOT NULL AFTER `fiscalization_type`; -- needs efd function improvement
+
+UPDATE `submenus` SET `label` = 'Branch Cash Summary' WHERE `submenus`.`id` = 136; -- Cash Summary With SR
+TRUNCATE `salesdescriptions`;
+ALTER TABLE `salesdescriptions` CHANGE `salesid` `sdi` INT(11) NOT NULL;
+ALTER TABLE `salesdescriptions` DROP `combined`, DROP `qty`, DROP `rate`, DROP `total`, DROP `createdby`;
+ALTER TABLE `salesdetails` DROP `combineid`, DROP `modifiedby`, DROP `dom`;
+ALTER TABLE `salesdetails` ADD `show_print` TINYINT NOT NULL DEFAULT '1' AFTER `vat_rate`, ADD `print_extra` TINYINT NOT NULL DEFAULT '0' AFTER `show_print`;
+UPDATE `submenus` SET `label` = 'My Sales Report' WHERE `submenus`.`id` = 173; -- Sales by Order Report Sr
+ALTER TABLE `sales` ADD `has_combine` TINYINT NOT NULL DEFAULT '0' AFTER `print_size`;
+ALTER TABLE `orders` ADD `print_size` VARCHAR(15) NOT NULL AFTER `type`;
+INSERT INTO `other_rights` (`id`, `menuid`, `label`, `action`, `sort`, `description`) VALUES (NULL, '1', 'Add User', 'add_user', '6', '');
+INSERT INTO `other_rights` (`id`, `menuid`, `label`, `action`, `sort`, `description`) VALUES (NULL, '1', 'Edit User', 'edit_user', '7', '');
+INSERT INTO `other_rights` (`id`, `menuid`, `label`, `action`, `sort`, `description`) VALUES (NULL, '1', 'Edit Roles', 'edit_roles', '8', '');
+INSERT INTO `other_rights` (`id`, `menuid`, `label`, `action`, `sort`, `description`) VALUES (NULL, '1', 'Reset Password', 'reset_password', '9', '');
+ALTER TABLE `hierarchics` ADD `commission` DECIMAL(5,2) NOT NULL AFTER `percentage`;
+ALTER TABLE `hierarchics` ADD `target` DECIMAL(5,2) NOT NULL AFTER `commission`;
+ALTER TABLE `hierarchicprices` ADD `commission` DECIMAL(5,2) NOT NULL AFTER `percentage`, ADD `target` DECIMAL(5,2) NOT NULL AFTER `commission`;
+ALTER TABLE `salesdetails` ADD `commission` DECIMAL(5,2) NOT NULL AFTER `points`;
+UPDATE `settings` SET `version` = '5.0' WHERE `settings`.`id` = 1;
+ALTER TABLE `salesdetails` ADD `target` DECIMAL(5,2) NOT NULL AFTER `commission`;
+ALTER TABLE `clients`  DROP `tallyid`,  DROP `industryid`,  DROP `lead_dom`;
+ALTER TABLE `clients` ADD `reseller` TINYINT NOT NULL DEFAULT '0' AFTER `ledgername`;
+
+
+ALTER TABLE `settings2` ADD `support_server` TEXT NOT NULL AFTER `printing_show_description`;
+DROP TABLE `industries`;
+
+
+-- import new industry table
+
+
+
+INSERT INTO `submenus` (`id`, `menuid`, `label`, `module`, `action`, `sortno`, `status`) VALUES (NULL, '1', 'Industries', 'industries', 'list', '21', '1');
+ALTER TABLE `clients` ADD `industryid` INT NOT NULL AFTER `ledgername`;
+ALTER TABLE `settings2` ADD `sales_agreement` TEXT NOT NULL AFTER `support_server`;
+ALTER TABLE `locations` ADD `support_branchcode` VARCHAR(5) NOT NULL AFTER `branchid`;
+INSERT INTO `submenus` (`id`, `menuid`, `label`, `module`, `action`, `sortno`, `status`) VALUES (NULL, '1', 'Invoice Remarks', 'sales', 'invoice_remarks', '21', '1');
+
+CREATE TABLE `invoice_remarks`(
+    `id` INT NOT NULL AUTO_INCREMENT,
+    `name` VARCHAR(20) NOT NULL,
+    `createdby` INT NOT NULL,
+    `doc` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    `status` ENUM('active','inactive') NOT NULL DEFAULT 'active',
+    PRIMARY KEY(`id`)
+) ENGINE = INNODB;
+
+-- new import tool
+ALTER TABLE `clients` ADD `inventoryid` INT NULL AFTER `impno`;
+ALTER TABLE `contacts` CHANGE `mobile` `mobile` VARCHAR(20) NOT NULL;
+ALTER TABLE `clients` CHANGE `mobile` `mobile` VARCHAR(100) NULL DEFAULT NULL;
+INSERT INTO `submenus` (`id`, `menuid`, `label`, `module`, `action`, `sortno`, `status`) VALUES (NULL, '15', 'Search Product', 'products', 'search_product', '2', '1');
+INSERT INTO `other_rights` (`id`, `menuid`, `label`, `action`, `sort`, `description`) VALUES (NULL, '1', 'Make Client Reseller', 'make_client_reseller', '2', '');
+ALTER TABLE `proformas` ADD `token` TEXT NOT NULL AFTER `status`;
+ALTER TABLE `proformadetails` ADD `sinc` TINYINT NOT NULL DEFAULT '0' AFTER `price`, ADD `incprice` DECIMAL(18,2) NOT NULL AFTER `sinc`;
+ALTER TABLE `proformadetails` DROP `combineid`;
+
+INSERT INTO `submenus` (`id`, `menuid`, `label`, `module`, `action`, `sortno`, `status`) VALUES (NULL, '17', 'My Sales Report Details', 'reports', 'sales_by_order_detailed_report_sr', '18', '1');
+INSERT INTO `submenus` (`id`, `menuid`, `label`, `module`, `action`, `sortno`, `status`) VALUES (NULL, '16', 'Sold Serial Nos', 'reports', 'sold_serialnos', '10', '1');
+ALTER TABLE `orders` ADD `foreign_orderid` INT NOT NULL AFTER `print_size`, ADD `order_source` VARCHAR(50) NOT NULL AFTER `foreign_orderid`;
+
+DROP TABLE `checklists`;
+
+
+-- import table checklists table
+
+
+DROP TABLE `target_details`;
+DROP TABLE `target`;
+CREATE TABLE `targets`(
+    `id` INT NOT NULL AUTO_INCREMENT,
+    `userid` INT NOT NULL,
+    `departmentid` INT NOT NULL,
+    `amount` DECIMAL(18, 2) NOT NULL,
+    `createdby` INT NOT NULL,
+    `doc` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY(`id`)
+) ENGINE = INNODB;
+INSERT INTO `other_rights` (`id`, `menuid`, `label`, `action`, `sort`, `description`)
+ VALUES (NULL, '1', 'Add Target', 'add_target', '10', ''), (NULL, '1', 'Edit Target', 'edit_target', '11', '');
+ALTER TABLE `orders` ADD `remarks` TEXT NOT NULL AFTER `plotno`, ADD `internal_remarks` TEXT NOT NULL AFTER `remarks`;
+
+UPDATE `submenus` SET `status` = '0' WHERE `submenus`.`id` = 1746; -- search_product action
+ALTER TABLE `sales` ADD `internal_remarks` TEXT NOT NULL AFTER `description`;
+
+
+INSERT INTO `submenus` (`id`, `menuid`, `label`, `module`, `action`, `sortno`, `status`) VALUES (NULL, '17', 'Sales Report SR Only', 'reports', 'sales_report_sr_only', '2', '1');
+INSERT INTO `other_rights` (`id`, `menuid`, `label`, `action`, `sort`, `description`) VALUES (NULL, '1', 'Update client Contact', 'update_client_contact', '2', '');
+UPDATE `submenus` SET `action` = 'list' WHERE `submenus`.`id` = 82; -- target action index to list
+ALTER TABLE `users`
+  DROP `tally_leagers`,
+  DROP `head`,
+  DROP `change_quick_sale_price`;
+
+ALTER TABLE `users` ADD `sale_limit` DECIMAL(18,2) NOT NULL AFTER `default_print_size`;
+INSERT INTO `submenus` (`id`, `menuid`, `label`, `module`, `action`, `sortno`, `status`) VALUES (NULL, '17', 'Proforma Audit Report', 'reports', 'proforma_audit', '7', '1');
+ALTER TABLE `salesdescriptions` ADD `pdi` INT NOT NULL AFTER `sdi`;
+ALTER TABLE `proformadetails` ADD `print_extra` TINYINT NOT NULL DEFAULT '0' AFTER `productname`;
+ALTER TABLE `salesdescriptions` ADD `odi` INT NOT NULL AFTER `pdi`;
+ALTER TABLE `orderdetails` ADD `print_extra` TINYINT NOT NULL DEFAULT '0' AFTER `orderid`;
+INSERT INTO `submenus` (`id`, `menuid`, `label`, `module`, `action`, `sortno`, `status`) VALUES (NULL, '17', 'Proforma Projection Report', 'reports', 'proforma_projection_report', '7', '1');
+ALTER TABLE `sales` ADD `invoiceremarkid` INT NOT NULL AFTER `op_reuse`;
+ALTER TABLE `client_opening_outstanding` ADD `invoiceremarkid` INT NOT NULL AFTER `payment_status`;
+INSERT INTO `submenus` (`id`, `menuid`, `label`, `module`, `action`, `sortno`, `status`) VALUES (NULL, '1', 'Check Lists', 'checklists', 'list', '21', '1');
+
+CREATE TABLE `order_checklists`(
+    `id` INT NOT NULL AUTO_INCREMENT,
+    `orderid` INT NOT NULL,
+    `cid` INT NOT NULL,
+    `remark` VARCHAR(50) NOT NULL,
+    `createdby` INT NOT NULL,
+    `doc` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY(`id`)
+) ENGINE = INNODB;
+ALTER TABLE `order_checklists` ADD `file_path` TEXT NOT NULL AFTER `doc`;
+
+UPDATE `submenus` SET `menuid` = '16', `module` = 'stocks', `sortno` = '2' WHERE `submenus`.`id` = 1751; -- Proforma projection report
+
+INSERT INTO `submenus` (`id`, `menuid`, `label`, `module`, `action`, `sortno`, `status`) VALUES (NULL, '17', 'Cash Summary User-Wise Overall', 'reports', 'cash_summary_userwise_overall', '10', '1');
+ALTER TABLE `branches` ADD `invoice_prefix` VARCHAR(10) NOT NULL AFTER `tally_purchase_account`;
+ALTER TABLE `sales` ADD `tally_invoiceno` VARCHAR(100) NOT NULL AFTER `token`;
+
+CREATE TABLE `canceled_receipts`(
+    `id` INT NOT NULL AUTO_INCREMENT,
+    `receiptno` INT NOT NULL,
+    `tally_voucherno` VARCHAR(100) NOT NULL,
+    `source` VARCHAR(100) NOT NULL,
+    `amount` DECIMAL(18, 2) NOT NULL,
+    `remarks` TEXT NOT NULL,
+    `createdby` INT NOT NULL,
+    `doc` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    `payload` TEXT NOT NULL,
+    PRIMARY KEY(`id`)
+) ENGINE = INNODB;
+
+INSERT INTO `other_rights` (`id`, `menuid`, `label`, `action`, `sort`, `description`) VALUES (NULL, '13', 'Cancel Receipt', 'cancel_receipt', '22', '');
+INSERT INTO `submenus` (`id`, `menuid`, `label`, `module`, `action`, `sortno`, `status`) VALUES (NULL, '17', 'Canceled Receipt', 'reports', 'canceled_receipt', '6', '1');
+ALTER TABLE `canceled_receipts` ADD `currencyid` INT NOT NULL AFTER `source`;
+UPDATE `submenus` SET `status` = '0' WHERE `submenus`.`id` = 149; -- CEO report
+
+INSERT INTO `submenus` (`id`, `menuid`, `label`, `module`, `action`, `sortno`, `status`) VALUES (NULL, '17', 'Branch Sales Report', 'reports', 'branch_sales_report', '2', '1');
+INSERT INTO `submenus` (`id`, `menuid`, `label`, `module`, `action`, `sortno`, `status`) VALUES (NULL, '17', 'Branch Sales Report SR', 'reports', 'branch_sales_report_sr', '2', '1');
+ALTER TABLE `settings` ADD `footer_img` VARCHAR(255) NOT NULL AFTER `logo`;
+ALTER TABLE `products` ADD `price_list` TINYINT NOT NULL DEFAULT '1' AFTER `forquick_sale`, ADD `website` TINYINT NOT NULL DEFAULT '1' AFTER `price_list`;
+UPDATE `submenus` SET `label` = 'Branch Sales outstanding',`action` = 'branch_sales_outstanding' WHERE `submenus`.`id` = 138; -- Sales Outstanding
+INSERT INTO `submenus` (`id`, `menuid`, `label`, `module`, `action`, `sortno`, `status`) VALUES (NULL, '17', 'Overall Sales outstanding', 'reports', 'overall_sales_outstanding', '10', '1');
+INSERT INTO `submenus` (`id`, `menuid`, `label`, `module`, `action`, `sortno`, `status`) VALUES (NULL, '17', 'Account Mng Sales outstanding', 'reports', 'account_manager_sales_outstanding', '10', '1');
+INSERT INTO `submenus` (`id`, `menuid`, `label`, `module`, `action`, `sortno`, `status`) VALUES (NULL, '17', 'Salesperson outstanding', 'reports', 'salesperson_sales_outstanding', '10', '1');
+INSERT INTO `submenus` (`id`, `menuid`, `label`, `module`, `action`, `sortno`, `status`) VALUES (NULL, '20', 'Export Clients', 'export', 'client_with_contacts', '5', '1');
+
+ALTER TABLE `locations` ADD `bulk_store` TINYINT NOT NULL DEFAULT '0' AFTER `support_branchcode`;
+
+INSERT INTO `submenus` (`id`, `menuid`, `label`, `module`, `action`, `sortno`, `status`) VALUES (NULL, '17', 'Clients outstanding summary', 'reports', 'clients_outstanding_summary', '10', '1');
+INSERT INTO `submenus` (`id`, `menuid`, `label`, `module`, `action`, `sortno`, `status`) VALUES (NULL, '17', 'Staff outstanding summary', 'reports', 'staff_outstanding_summary', '10', '1');
+ALTER TABLE `clients` ADD `credit_limit` DECIMAL(18,2) NOT NULL AFTER `reseller`;
+INSERT INTO `submenus` (`id`, `menuid`, `label`, `module`, `action`, `sortno`, `status`) VALUES (NULL, '1', 'Sales Documents', 'sales', 'sales_documents', '22', '1');
+
+CREATE TABLE `documents`(
+    `id` INT NOT NULL AUTO_INCREMENT,
+    `name` VARCHAR(20) NOT NULL,
+    `createdby` INT NOT NULL,
+    `doc` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    `status` ENUM('active','inactive') NOT NULL DEFAULT 'active',
+    PRIMARY KEY(`id`)
+) ENGINE = INNODB;
+
+CREATE TABLE `sales_documents`(
+    `id` INT NOT NULL AUTO_INCREMENT,
+    `salesid` INT NOT NULL,
+    `docid` INT NOT NULL,
+    `path` TEXT NOT NULL,
+    `createdby` INT NOT NULL,
+    `doc` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY(`id`)
+) ENGINE = INNODB;
+
+ALTER TABLE `settings` ADD `diff_client_ledgername` TINYINT NOT NULL DEFAULT '0' AFTER `tally_adjustment_ledger`;
+ALTER TABLE `clients` ADD `tally_name` VARCHAR(100) NOT NULL AFTER `name`;
+
+INSERT INTO `submenus` (`id`, `menuid`, `label`, `module`, `action`, `sortno`, `status`) VALUES (NULL, '17', 'Salesperson Summary', 'reports', 'salesperson_summary', '17', '1');
+INSERT INTO `submenus` (`id`, `menuid`, `label`, `module`, `action`, `sortno`, `status`) VALUES (NULL, '17', 'Salesperson Summary SR', 'reports', 'salesperson_summary_sr', '17', '1');
+INSERT INTO `submenus` (`id`, `menuid`, `label`, `module`, `action`, `sortno`, `status`) VALUES (NULL, '15', 'Export Product Price With Stock', 'hierarchics', 'export_price_with_stock', '13', '1');
+ALTER TABLE `settings2` ADD `installment_payment` TINYINT NOT NULL DEFAULT '0' AFTER `quicksale_discount`;
+ALTER TABLE `sales` ADD `has_installment` TINYINT NOT NULL DEFAULT '0' AFTER `op_reuse`;
+ALTER TABLE `sales` ADD `dist_plan` VARCHAR(20) NOT NULL AFTER `has_installment`;
+
+CREATE TABLE `sales_installment_plans`(
+    `id` INT NOT NULL AUTO_INCREMENT,
+    `salesid` INT NOT NULL,
+    `time` DATETIME NOT NULL,
+    `amount` DECIMAL(18, 2) NOT NULL,
+    `createdby` INT NOT NULL,
+    `doc` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY(`id`)
+) ENGINE = INNODB;
+
+
+INSERT INTO `menus` (`id`, `label`, `module`, `action`, `icon`, `sortno`, `status`) VALUES (NULL, 'Accounting Reports', '', '', 'fa fa-line-chart', '12', '1');
+
+-- ==>update submenus query from file
+DELETE FROM `submenus` where menuid not in (select id from menus);
+INSERT INTO `submenus` (`id`, `menuid`, `label`, `module`, `action`, `sortno`, `status`) VALUES (NULL, '21', 'Salesperson outstanding summary', 'reports', 'salesperson_outstanding_summary', '10', '1');
+ALTER TABLE `products` ADD `warrant_month` INT NOT NULL AFTER `validate_serialno`;
+INSERT INTO `submenus` (`id`, `menuid`, `label`, `module`, `action`, `sortno`, `status`) VALUES (NULL, '15', 'Warranty Sticker Setting', 'products', 'warranty_sticker_setting', '22', '1');
+ALTER TABLE `settings2` ADD `warranty_sticker_settings` TEXT NOT NULL AFTER `barcode_settings`;
+
+CREATE TABLE `recurring_bills`(
+    `id` INT NOT NULL AUTO_INCREMENT,
+    `clientid` INT NOT NULL,
+    `locationid` INT NOT NULL,
+    `start_date` DATETIME NOT NULL,
+    `bill_type` VARCHAR(20) NOT NULL,
+    `createdby` INT NOT NULL,
+    `doc` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    `remarks` TEXT NOT NULL,
+    PRIMARY KEY(`id`)
+) ENGINE = INNODB;
+
+CREATE TABLE `recurring_bill_details`(
+    `id` INT NOT NULL AUTO_INCREMENT,
+    `billid` INT NOT NULL,
+    `productid` INT NOT NULL,
+    `qty` INT NOT NULL,
+    `vat` DECIMAL(18, 2) NOT NULL,
+    `price` DECIMAL(18, 2) NOT NULL,
+    `sinc` TINYINT NOT NULL,
+    `incprice` DECIMAL(18, 2) NOT NULL,
+    `print_extra` TINYINT NOT NULL,
+    `extra_desc` TEXT NOT NULL,
+    PRIMARY KEY(`id`)
+) ENGINE = INNODB;
+
+CREATE TABLE `sales_billed`(
+    `id` INT NOT NULL AUTO_INCREMENT,
+    `salesid` INT NOT NULL,
+    `billid` INT NOT NULL,
+    `bill_type` VARCHAR(20) NOT NULL,
+    `createdby` INT NOT NULL,
+    `doc` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY(`id`)
+) ENGINE = INNODB;
+
+INSERT INTO `submenus` (`id`, `menuid`, `label`, `module`, `action`, `sortno`, `status`) VALUES (NULL, '13', 'Recurring Bills', 'recurring_bills', 'list', '7', '1');
+INSERT INTO `other_rights` (`id`, `menuid`, `label`, `action`, `sort`, `description`) VALUES (NULL, '13', 'Create Bill', 'create_bill', '4', '');
+INSERT INTO `other_rights` (`id`, `menuid`, `label`, `action`, `sort`, `description`) VALUES (NULL, '13', 'Edit Bill', 'edit_bill', '4', '');
+
+
+-- new 5 demos latest update --
+UPDATE `submenus` SET `status` = '0' WHERE `submenus`.`id` = 143; -- referral report
+INSERT INTO `submenus` (`id`, `menuid`, `label`, `module`, `action`, `sortno`, `status`) VALUES (NULL, '1', 'Billing Types', 'recurring_bills', 'bill_types', '23', '1');
+
+CREATE TABLE `bill_types`(
+    `id` INT NOT NULL AUTO_INCREMENT,
+    `name` VARCHAR(100) NOT NULL,
+    `bill_interval` INT NOT NULL,
+    `type` ENUM('day', 'week', 'month', 'year') NOT NULL,
+    `status` VARCHAR(20) NOT NULL DEFAULT 'active',
+    PRIMARY KEY(`id`)
+) ENGINE = INNODB;
+
+ALTER TABLE `recurring_bills`
+  DROP `start_date`,
+  DROP `bill_type`;
+
+ALTER TABLE `recurring_bills` ADD `internal_remarks` TEXT NOT NULL AFTER `remarks`;
+ALTER TABLE `recurring_bills` ADD `currencyid` INT NOT NULL AFTER `locationid`;
+ALTER TABLE `recurring_bill_details` ADD `billtypeid` INT NOT NULL AFTER `billid`, ADD `startdate` DATETIME NOT NULL AFTER `billtypeid`;
+ALTER TABLE `recurring_bills` ADD `total_amount` DECIMAL(18,2) NOT NULL AFTER `currencyid`;
+ALTER TABLE `recurring_bills` ADD `modifiedby` INT NULL AFTER `doc`, ADD `dom` DATETIME NULL AFTER `modifiedby`;
+ALTER TABLE `recurring_bill_details` CHANGE `vat` `vat_rate` DECIMAL(18,2) NOT NULL;
+
+DROP TABLE `recurring_bills`, `recurring_bill_details`, `sales_billed`;
+
+CREATE TABLE `recurring_bills`(
+    `id` INT NOT NULL AUTO_INCREMENT,
+    `clientid` INT NOT NULL,
+    `locationid` INT NOT NULL,
+    `billtypeid` INT NOT NULL,
+    `startdate` DATETIME NOT NULL,
+    `lastbilldate` DATETIME NULL,
+    `currencyid` INT NOT NULL,
+    `non_stock` TINYINT NOT NULL,
+    `total_amount` DECIMAL(18, 2) NOT NULL,
+    `createdby` INT NOT NULL,
+    `doc` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    `modifiedby` INT NULL,
+    `dom` DATETIME NULL,
+    `remarks` TEXT NOT NULL,
+    `internal_remarks` TEXT NOT NULL,
+    `status` VARCHAR(20) NOT NULL DEFAULT 'active',
+    PRIMARY KEY(`id`)
+) ENGINE = INNODB;
+
+CREATE TABLE `recurring_bill_details`(
+    `id` INT NOT NULL AUTO_INCREMENT,
+    `billid` INT NOT NULL,
+    `productid` INT NOT NULL,
+    `qty` INT NOT NULL,
+    `price` DECIMAL(18, 2) NOT NULL,
+    `sinc` TINYINT NOT NULL,
+    `incprice` DECIMAL(18, 2) NOT NULL,
+    `vat_rate` DECIMAL(18, 2) NOT NULL,
+    `print_extra` TINYINT NOT NULL,
+    `extra_desc` TEXT NOT NULL,
+    PRIMARY KEY(`id`)
+) ENGINE = INNODB;
+
+ALTER TABLE `bill_types` CHANGE `type` `type` ENUM('month','year') CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL;
+ALTER TABLE `sales` ADD `billid` INT NOT NULL AFTER `internal_remarks`;
+ALTER TABLE `recurring_bills` ADD `total_excamount` DECIMAL(18,2) NOT NULL AFTER `non_stock`, ADD `total_vatamount` DECIMAL(18,2) NOT NULL AFTER `total_excamount`;
+
+CREATE TABLE `recurring_bills_logs`(
+    `id` INT NOT NULL AUTO_INCREMENT,
+    `billid` INT NOT NULL,
+    `salesid` INT NOT NULL,
+    `createdby` INT NOT NULL,
+    `doc` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    `remarks` TEXT NOT NULL,
+    PRIMARY KEY(`id`)
+) ENGINE = INNODB;
+
+ALTER TABLE `orders` ADD `billid` INT NOT NULL AFTER `proformaid`;
+ALTER TABLE `sales` ADD `previd` INT NOT NULL AFTER `receipt_no`;
+ALTER TABLE `sales` ADD `fisc_convertedby` INT NULL AFTER `dom`, ADD `fisc_convertdate` DATETIME NULL AFTER `fisc_convertedby`;
+INSERT INTO `submenus` (`id`, `menuid`, `label`, `module`, `action`, `sortno`, `status`) VALUES (NULL, '21', 'Installment Outstanding', 'reports', 'installment_outstanding', '16', '1');
+ALTER TABLE `recurring_bills` ADD `nextbilldate` DATETIME NULL AFTER `lastbilldate`;
+ALTER TABLE `recurring_bills_logs` ADD `billmonth` DATETIME NOT NULL AFTER `salesid`;
+ALTER TABLE `orders` ADD `person_changedby` INT NULL AFTER `updated_by`, ADD `person_changedat` DATETIME NULL AFTER `person_changedby`;
+
+CREATE TABLE `recurring_bill_edit_logs`(
+    `id` INT NOT NULL AUTO_INCREMENT,
+    `billid` INT NOT NULL,
+    `total_amount` DECIMAL(18, 2) NOT NULL,
+    `createdby` INT NOT NULL,
+    `doc` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    `payload` TEXT NOT NULL,
+    PRIMARY KEY(`id`)
+) ENGINE = INNODB;
+
+ALTER TABLE `sales` ADD `credit_convertedby` INT NULL AFTER `fisc_convertdate`, ADD `credit_convertedat` DATETIME NULL AFTER `credit_convertedby`;
+ALTER TABLE `sales` ADD `credit_convert_remarks` TEXT NULL AFTER `credit_convertedat`;
+
+
+ALTER TABLE `settings2` ADD `support_integration` TINYINT NOT NULL DEFAULT '1' AFTER `printing_show_description`;
+INSERT INTO `submenus` (`id`, `menuid`, `label`, `module`, `action`, `sortno`, `status`) VALUES (NULL, '16', 'Branches Stock Without Cost Report', 'stocks', 'branches_stock_without_cost', '2', '1');
+ALTER TABLE `orders` ADD `foreign_ordertype` VARCHAR(50) NOT NULL AFTER `order_source`;
+
+ALTER TABLE `settings` ADD `show_print_header` TINYINT NOT NULL DEFAULT '1' AFTER `footer_img`, ADD `show_print_footer` TINYINT NOT NULL DEFAULT '1' AFTER `show_print_header`;
+
+
+-- mega wood & mmexpress ---
+INSERT INTO `submenus` (`id`, `menuid`, `label`, `module`, `action`, `sortno`, `status`) VALUES (NULL, '17', 'Daily Sales Summary', 'reports', 'daily_sales_summary', '8', '1');
+INSERT INTO `submenus` (`id`, `menuid`, `label`, `module`, `action`, `sortno`, `status`) VALUES (NULL, '16', 'Stock Planning Report', 'stocks', 'stock_planning_report', '2', '1');
+INSERT INTO `other_rights` (`id`, `menuid`, `label`, `action`, `sort`, `description`) VALUES (NULL, '1', 'View all client ledger', 'view_all_client_ledger', '12', '');
+INSERT INTO `other_rights` (`id`, `menuid`, `label`, `action`, `sort`, `description`) VALUES (NULL, '1', 'View managing client ledger', 'view_managing_client_ledger', '13', '');
+INSERT INTO `submenus` (`id`, `menuid`, `label`, `module`, `action`, `sortno`, `status`) VALUES (NULL, '8', 'Stock Manufacturing', 'stocks', 'stock_manufacture_list', '4', '1');
+ALTER TABLE `locations` ADD `bankids` TEXT NOT NULL AFTER `tally_cash_ledger`;
+ALTER TABLE `banks` ADD `accname` VARCHAR(100) NOT NULL AFTER `name`;
+INSERT INTO `submenus` (`id`, `menuid`, `label`, `module`, `action`, `sortno`, `status`) VALUES (NULL, '17', 'Location Sales Report', 'reports', 'location_sales_report', '18', '1'), (NULL, '17', 'Location Sales Report SR', 'reports', 'location_sales_report_sr', '18', '1');
+ALTER TABLE `sales_fiscalization` DROP `vfd_qrcode`;
+
+INSERT INTO `submenus` (`id`, `menuid`, `label`, `module`, `action`, `sortno`, `status`) VALUES (NULL, '17', 'Department Sales Report', 'reports', 'department_sales_report', '21', '1');
+INSERT INTO `submenus` (`id`, `menuid`, `label`, `module`, `action`, `sortno`, `status`) VALUES (NULL, '17', 'Department Sales Report SR', 'reports', 'department_sales_report_sr', '22', '1');
+ALTER TABLE `settings2` ADD `sr_invoice_title` VARCHAR(100) NOT NULL AFTER `sales_agreement`;
+ALTER TABLE `settings2` ADD `sr_extra_remarks` TEXT NOT NULL AFTER `sr_invoice_title`;
+
+
+
+INSERT INTO `other_rights` (`id`, `menuid`, `label`, `action`, `sort`, `description`) VALUES (NULL, '8', 'Manufacture Stock', 'manufacture_stock', '10', '');
+INSERT INTO `other_rights` (`id`, `menuid`, `label`, `action`, `sort`, `description`) VALUES (NULL, '8', 'Approve Manufacture', 'approve_manufacture', '10', '');
+
+CREATE TABLE `stock_manufactures`(
+    `id` INT NOT NULL AUTO_INCREMENT,
+    `locationid` INT NOT NULL,
+    `createdby` INT NOT NULL,
+    `doc` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    `remarks` TEXT NOT NULL,
+    `approvedby` INT NULL,
+    `approvedate` DATETIME NULL,
+    `modifiedby` INT NULL,
+    `dom` DATETIME NULL,
+    `token` TEXT NOT NULL,
+    `status` VARCHAR(10) NOT NULL DEFAULT 'active',
+    PRIMARY KEY(`id`)
+) ENGINE = INNODB;
+
+CREATE TABLE `stock_manufacture_details`(
+    `id` INT NOT NULL AUTO_INCREMENT,
+    `manufactureid` INT NOT NULL,
+    `smdi` INT NULL,
+    `stockid` INT NOT NULL,
+    `costprice` DECIMAL(18, 2) NOT NULL,
+    `quickprice` DECIMAL(18,2) NULL,
+    `qty` INT NOT NULL,
+    `stock_qty` INT NULL,
+    `createdby` INT NOT NULL,
+    `doc` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY(`id`)
+) ENGINE = INNODB;
+
+CREATE TABLE `stock_manufacture_used_batches`(
+    `id` INT NOT NULL AUTO_INCREMENT,
+    `smdi` INT NOT NULL,
+    `batchid` INT NOT NULL,
+    `qty` INT NOT NULL,
+    PRIMARY KEY(`id`)
+) ENGINE = INNODB;
+
+ALTER TABLE `batches` CHANGE `gdi` `gdi` INT(11) NULL COMMENT 'grn_detail_id';
+ALTER TABLE `batches` ADD `smei` INT NULL COMMENT 'manufacture detail id' AFTER `gdi`;
+
+ALTER TABLE `serialnos` CHANGE `source` `source` ENUM('grn','sale','transfer','return','upload','manufacture') CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT 'grn';
+
+CREATE TABLE `stock_manufacture_serialnos`(
+    `id` INT NOT NULL AUTO_INCREMENT,
+    `smdi` INT NOT NULL,
+    `snoid` INT NOT NULL,
+    `doc` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY(`id`)
+) ENGINE = INNODB;
+
+ALTER TABLE `serialnos` ADD `smdi` INT NULL COMMENT 'used for manufacture' AFTER `sdi`;
+
+
+
+INSERT INTO `submenus` (`id`, `menuid`, `label`, `module`, `action`, `sortno`, `status`) VALUES (NULL, '16', 'Serialno Stock', 'reports', 'serialno_stock', '11', '1');
+ALTER TABLE `settings` ADD `main_system` TINYINT NOT NULL DEFAULT '1' AFTER `name`;
+ALTER TABLE `settings` ADD `multi_system` TINYINT NOT NULL DEFAULT '0' AFTER `name`;
+ALTER TABLE `settings2` ADD `system_token` TEXT NOT NULL AFTER `sr_extra_remarks`, ADD `main_system_token` TEXT NOT NULL AFTER `system_token`;
+ALTER TABLE `settings2` ADD `main_system_url` VARCHAR(100) NOT NULL AFTER `main_system_token`;
+
+CREATE TABLE `system_tokens`(
+    `id` INT NOT NULL AUTO_INCREMENT,
+    `name` VARCHAR(100) NOT NULL,
+    `endpoint` VARCHAR(100) NOT NULL,
+    `token` TEXT NOT NULL,
+    `createdby` INT NOT NULL,
+    `doc` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    `modifiedby` INT NULL,
+    `dom` DATETIME NULL,
+    `status` VARCHAR(20) NOT NULL DEFAULT 'active',
+    PRIMARY KEY(`id`)
+) ENGINE = INNODB;
+
+ALTER TABLE `clients` ADD `code` INT NOT NULL AFTER `id`;
+ALTER TABLE `users` ADD `code` INT NOT NULL AFTER `id`;
+ALTER TABLE `clients` ADD `client_source` VARCHAR(20) NOT NULL AFTER `code`;
+ALTER TABLE `settings` ADD `vfd_invoice_prefix` VARCHAR(100) NOT NULL AFTER `fcodetoken`;
+
+-- latest pctl update --
+
+UPDATE `submenus` SET `label` = 'Documents', `module` = 'documents', `action` = 'list' WHERE `submenus`.`id` = 1765; -- sales_document
+
+CREATE TABLE `client_documents`(
+    `id` INT NOT NULL AUTO_INCREMENT,
+    `clientid` INT NOT NULL,
+    `docid` INT NOT NULL,
+    `path` TEXT NOT NULL,
+    `createdby` INT NOT NULL,
+    `doc` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY(`id`)
+) ENGINE = INNODB;
+
+INSERT INTO `submenus` (`id`, `menuid`, `label`, `module`, `action`, `sortno`, `status`) VALUES (NULL, '16', 'GRN Sales Analysis', 'reports', 'grn_sales_analysis', '5', '0');
+
+
+ALTER TABLE `settings2` ADD `support_name` VARCHAR(50) NOT NULL AFTER `support_integration`;
+
+ALTER TABLE `salesdescriptions` CHANGE `description` `description` TEXT CHARACTER SET latin1 COLLATE latin1_swedish_ci NOT NULL;
+
+ALTER TABLE `settings2` ADD `main_system_public_url` VARCHAR(100) NOT NULL AFTER `main_system_url`;
+
+
+DROP TABLE `amc`, `customer_reply`, `customer_replydetails`, `feedbackqns`,
+ `feedbackqnsreply`, `messages`, `pendingadminlogs`, `pendinghodlogs`, `pendingtechscriptlogs`, `proformadescriptions`,
+  `positions`, `serials`, `statuses`, `supporttype`, `tally_ledgers`, `tally_tax_leadgers`,
+  `ticketdetails`, `ticketdetailtech`, `ticketechnicians`, `ticketransferredlog`, `tickets`,
+  `timeslots`, `tra`, `userscheduledetails`, `userschedules`, `warranties`;
+
+ALTER TABLE `products` ADD `taxcode` VARCHAR(20) NOT NULL AFTER `categoryid`;
+
+
+ALTER TABLE `settings` ADD `softwareid` INT NOT NULL AFTER `cpanel_status`, ADD `lice_token` TEXT NOT NULL AFTER `softwareid`, ADD `pmessage` VARCHAR(255) NOT NULL AFTER `lice_token`;
+INSERT INTO `submenus` (`id`, `menuid`, `label`, `module`, `action`, `sortno`, `status`) VALUES (NULL, '1', 'License', 'authenticate', 'license', '50', '1');
+
+ALTER TABLE `salesdetails` CHANGE `price` `price` DECIMAL(18,2) UNSIGNED NOT NULL, CHANGE `hidden_cost` `hidden_cost` DECIMAL(18,2) NOT NULL;
+ALTER TABLE `salespayments` ADD `handed_amount` DECIMAL(18,2) NOT NULL AFTER `paid_totalmount`;
+ALTER TABLE `settings2` ADD `show_change` TINYINT NOT NULL DEFAULT '0' AFTER `sr_extra_remarks`;
+ALTER TABLE `settings2` ADD `quicksale_search` TINYINT NOT NULL DEFAULT '1' AFTER `quicksale_discount`;
+INSERT INTO `submenus` (`id`, `menuid`, `label`, `module`, `action`, `sortno`, `status`) VALUES (NULL, '20', 'Export Products', 'export', 'products', '6', '1');
+ALTER TABLE `settings2` ADD `fiscalize_paid` TINYINT NOT NULL DEFAULT '0' AFTER `installment_payment`;
+
+
+-- for support => INSERT INTO `submenus` (`id`, `menuid`, `label`, `module`, `action`, `sortno`, `status`) VALUES (NULL, '17', 'Support Sales Report', 'reports', 'support_sales_report', '23', '0');
+
+INSERT INTO `submenus` (`id`, `menuid`, `label`, `module`, `action`, `sortno`, `status`) VALUES (NULL, '16', 'Location Stock In/Out', 'stocks', 'location_stock_inout_report', '3', '1');
+ALTER TABLE `settings` DROP `group_product`;
+ALTER TABLE `settings` ADD `zvfd_taxcategoryid` INT NOT NULL AFTER `zvfd_integration_id`;
+ALTER TABLE `categories` ADD `zvfd_tax_type` INT NOT NULL AFTER `taxcode`;
+ALTER TABLE `sales` ADD `zvfd_tax_type` INT NOT NULL AFTER `receipt_method`;
+
+-- mwenzetu
+
+INSERT INTO `submenus` (`id`, `menuid`, `label`, `module`, `action`, `sortno`, `status`) VALUES (NULL, '16', 'Batchwise Stock Report', 'stocks', 'bacthwise_stock_report', '2', '1');
+
+-- ashna latest update
+
+INSERT INTO `submenus` (`id`, `menuid`, `label`, `module`, `action`, `sortno`, `status`) VALUES (NULL, '15', 'Quick Price List With Last Purchase Date', 'hierarchics', 'quick_price_list_with_last_purchase', '13', '1');
+INSERT INTO `submenus` (`id`, `menuid`, `label`, `module`, `action`, `sortno`, `status`) VALUES (NULL, '16', 'Stock Report With Quantity Category', 'stocks', 'quantitywise_stock_report', '2', '1');
+
+
+ALTER TABLE `settings2` ADD `pos_display_location` INT NOT NULL AFTER `fiscalize_paid`;
+
+-- faraja pharmacy latest update
+
+INSERT INTO `other_rights` (`id`, `menuid`, `label`, `action`, `sort`, `description`) VALUES (NULL, '13', 'Resend EFD Receipt', 'resend_efd_receipt', '23', 'Send again EFD receipt to machine');
+ALTER TABLE `settings2` ADD `quick_sale_beep` TINYINT NOT NULL DEFAULT '0' AFTER `pos_display_location`;
+ALTER TABLE `users` ADD `extra_desc_approval` TINYINT NOT NULL DEFAULT '0' AFTER `sale_limit`;
+UPDATE `settings` SET `version` = '6.0.0' WHERE `settings`.`id` = 1;
+
+-- 14star --
+INSERT INTO `submenus` (`menuid`, `label`, `module`, `action`, `sortno`, `status`) VALUES ('17', 'Sales Report With Time', 'reports', 'sales_report_with_time', '2', '1'),('17', 'Sales Report SR With Time', 'reports', 'sales_report_sr_with_time', '2', '1');
+ALTER TABLE `clients` CHANGE `doc` `doc` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP;
+
+--  piknpay
+
+-- CLEAR DUPLICATES INVOICENO
+-- find duplicates SELECT receipt_no, count(receipt_no) as duplicate,doc FROM `sales` group by receipt_no having duplicate >1
+-- prefix duplicates with 0
+ALTER TABLE `sales` ADD UNIQUE (`receipt_no`);
+
+-- latest pctl update --
+ALTER TABLE `settings2` ADD `quicksale_keyboardonly` TINYINT NOT NULL DEFAULT '0' AFTER `quicksale_discount`;
+UPDATE `settings` SET `version` = '6.0.1' WHERE `settings`.`id` = 1;
+
+-- V6.0.1
+
+INSERT INTO `other_rights` (`id`, `menuid`, `label`, `action`, `sort`, `description`) VALUES (NULL, '1', 'View Client Purchase', 'view_client_purchase', '14', 'View client purchases & proformas');
+
+//MAC ADDRESS
+ALTER TABLE `mac_address` CHANGE `device_status` `device_status` ENUM('active','blocked') NOT NULL DEFAULT 'active';
+ALTER TABLE `mac_address` DROP `status`;
+
+
+

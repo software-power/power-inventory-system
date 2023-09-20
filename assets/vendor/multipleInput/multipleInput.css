@@ -1,0 +1,49 @@
+.multipleInput-container {
+     border:1px #ccc solid;
+     padding:1px;
+     padding-bottom:0;
+     cursor:text;
+     font-size:13px;
+     width:100%;
+     border-radius: 5px;
+}
+
+.multipleInput-container input {
+     font-size:13px;
+     clear:both;
+     width:250px;
+     height:24px;
+     border:0;
+     padding-left:3px;
+     margin-bottom:1px;
+}
+
+.multipleInput-container ul {
+     list-style-type:none;
+     padding:3px;
+     margin:0;
+}
+
+li.multipleInput-email {
+     float:left;
+     margin-right:2px;
+     margin-bottom:1px;
+     border:1px #caafaf solid;
+     padding:2px;
+     background:#e2e9f3;
+}
+
+.multipleInput-close {
+    width:10px;
+    height:10px;
+    background:url('close.png');
+    background-size: contain;
+    display: block;
+    float: right;
+    margin: 0 3px;
+    position: relative;
+    top: 7px;
+}
+.multipleInput-container input[type="text"] {
+    width: 100%;
+}

@@ -1,0 +1,63 @@
+
+.floating-msg {
+    position: fixed;
+    bottom: 65px;
+    right: 20px;
+    z-index: 9000;
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+    align-items: end;
+}
+
+.floating-msg ul {
+    list-style: none;
+    padding-left: 0;
+}
+
+.floating-msg ul li {
+    padding: 5px 0;
+    font-size: 10pt;
+}
+
+.floating-msg ul li:hover {
+    background-color: #dadada;
+}
+
+.floating-msg .msg-holder {
+    background-color: #fff;
+    max-height: 200px;
+    min-width: 200px;
+    max-width: 300px;
+    box-shadow: 0 0 20px #5b5b5b;
+    border-top-left-radius: 10px;
+    border-top-right-radius: 10px;
+    padding: 5px;
+    overflow-y: auto;
+    display: none;
+    transition: 0.2s;
+}
+
+.floating-msg:hover .msg-holder {
+    display: block;
+    transition: 0.2s;
+}
+
+.floating-msg .btn {
+    height: 50px;
+    width: 50px;
+    background-color: orangered;
+    box-shadow: 0 0 20px #5b5b5b;
+    border-radius: 50%;
+    animation-iteration-count: infinite;
+    animation-duration: 3s;
+    display: block;
+    transition: 0.2s;
+    color: #fff;
+}
+
+
+.floating-msg:hover .btn, .floating-msg:focus .btn, .floating-msg.active .btn {
+    animation-iteration-count: 0;
+}
+

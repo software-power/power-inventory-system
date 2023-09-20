@@ -1,0 +1,6 @@
+@font-face {
+    font-family: 'Agency FB Bold';
+    font-style: normal;
+    font-weight: 700;
+    src: url('agency-fb-bold.woff') format('woff'), url('agency-fb-bold.ttf') format('truetype');
+}

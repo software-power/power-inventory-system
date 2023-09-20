@@ -1,0 +1,1 @@
+<!-- INSERT INTO `submenus` (`id`, `menuid`, `label`, `module`, `action`, `sortno`, `status`) VALUES (NULL, '1', 'Mac-Address', 'mac_address', 'index', '15', '1'); -->

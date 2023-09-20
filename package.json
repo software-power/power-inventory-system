@@ -1,0 +1,31 @@
+{
+  "name": "support-system",
+  "version": "1.0.0",
+  "description": "support system",
+  "main": "index.php",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://gitlab.com/kassam-binary/support-system.git"
+  },
+  "keywords": [
+    "support system",
+    "support"
+  ],
+  "author": "kassam mustapha",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://gitlab.com/kassam-binary/support-system.git"
+  },
+  "homepage": "https://gitlab.com/kassam-binary/support-system#readme",
+  "dependencies": {
+    "grunt": "^1.1.0",
+    "grunt-contrib-sass": "^1.0.0",
+    "grunt-contrib-watch": "^1.1.0",
+    "jsbarcode": "^3.11.0",
+    "print-js": "^1.0.63",
+    "slick-carousel": "^1.8.1"
+  }
+}

@@ -1,0 +1,8 @@
+{
+    "require": {
+        "firebase/php-jwt": "^6.3",
+        "symfony/process": "4.4.0",
+        "coderatio/simple-backup": "1.0.4",
+        "cache/filesystem-adapter": "^1.1"
+    }
+}
